@@ -43,7 +43,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-wide">ข้อสอบสเมิร์ฟทู</h1>
-                    <p class="text-xs text-indigo-200">แบบทดสอบ 20 ข้อ</p>
+                    <p class="text-xs text-indigo-200">แบบทดสอบ 15 ข้อ</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -81,7 +81,7 @@
                         </div>
                         <div class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl">
                             <i class="fa-solid fa-clock text-indigo-600"></i>
-                            <span>เวลาทำสอบ 30 นาที</span>
+                            <span>เวลาทำสอบ 9999 วินาที</span>
                         </div>
                     </div>
                 </div>
@@ -150,7 +150,7 @@
                         <div class="flex justify-between items-center pt-1.5">
                             <span class="text-indigo-300">คะแนนที่ได้:</span>
                             <div class="flex items-center gap-2">
-                                <span id="lookup-score" class="font-bold text-lg text-emerald-400">0/20</span>
+                                <span id="lookup-score" class="font-bold text-lg text-emerald-400">0/15</span>
                                 <span id="lookup-badge" class="px-2 py-0.5 rounded text-xs font-bold">ผ่าน</span>
                             </div>
                         </div>
@@ -395,7 +395,7 @@
             {key:"ข",text:"คาง"},
             {key:"ค",text:"ซ้าย"},
             {key:"ง",text:"ขวา"}], 
-            answer: "ข" },
+            answer: "ค" },
             { id: 2,  qText: "ครัวซองของกมลอยู่ที่ไหน", code: null, options: [{key:"ก",text:"ขาซ้าย"},
             {key:"ข",text:"ข้อเท้าซ้าย"},
             {key:"ค",text:"ขาขวา"},
@@ -539,7 +539,7 @@
             document.getElementById('quiz-student-info').innerHTML = `<i class="fa-solid fa-user"></i> ${studentInfo.name}`;
             document.getElementById('quiz-student-uid').textContent = studentInfo.uid;
 
-            timeRemaining = 1800;
+            timeRemaining = 9999;
             updateTimerDisplay();
             clearInterval(examTimer);
             examTimer = setInterval(function() {
@@ -756,7 +756,7 @@
             if (result) {
                 box.classList.remove('hidden');
                 document.getElementById('lookup-name').textContent = result.name;
-                document.getElementById('lookup-score').textContent = `${result.total} / 20`;
+                document.getElementById('lookup-score').textContent = `${result.total} / 15`;
 
                 const badge = document.getElementById('lookup-badge');
                 if (result.total >= 10) {
@@ -872,7 +872,7 @@
             }
 
             let csvContent = "\ufeff";
-            csvContent += "User ID,ชื่อ,คะแนนรวม (20 คะแนน),สถานะการประเมิน,วันเวลาทำข้อสอบ\n";
+            csvContent += "User ID,ชื่อ,คะแนนรวม (15 คะแนน),สถานะการประเมิน,วันเวลาทำข้อสอบ\n";
 
             records.forEach(student => {
                 const statusText = student.total >= 10 ? "ผ่าน" : "ปรับปรุง";
@@ -906,7 +906,7 @@
                 const namePrefix = Math.random() > 0.5 ? "เด็กชาย" : "เด็กหญิง";
                 const fullName = `${namePrefix}${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
 
-                const total = Math.floor(Math.random() * 15) + 5; // 5-19
+                const total = Math.floor(Math.random() * 15) + 5;
 
                 const submitTime = new Date(Date.now() - Math.random() * 36000000).toLocaleString('th-TH');
 
