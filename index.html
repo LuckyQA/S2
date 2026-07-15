@@ -567,7 +567,7 @@
         function renderQuestion() {
             const q = EXAM_QUESTIONS[currentQuestionIndex];
 
-            document.getElementById('quiz-q-num').textContent = `คำถามข้อที่ ${q.id} จาก 20 ข้อ`;
+            document.getElementById('quiz-q-num').textContent = `คำถามข้อที่ ${q.id} จาก 15 ข้อ`;
             document.getElementById('quiz-q-text').textContent = q.qText;
 
             const codeBox = document.getElementById('quiz-code-box');
@@ -850,7 +850,7 @@
                 row.innerHTML = `
                     <td class="py-3 px-4 text-center font-mono text-xs font-bold text-slate-900 bg-slate-50 rounded-lg border border-slate-100">${student.uid}</td>
                     <td class="py-3 px-4 font-semibold text-slate-900">${student.name}</td>
-                    <td class="py-3 px-4 text-center font-extrabold text-indigo-700 text-base">${student.total} / 20</td>
+                    <td class="py-3 px-4 text-center font-extrabold text-indigo-700 text-base">${student.total} / 15</td>
                     <td class="py-3 px-4 text-center">
                         <span class="px-2.5 py-1 text-xs font-extrabold rounded-full border ${statusColor}">
                             ${statusText}
