@@ -4,545 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบข้อสอบออนไลน์</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Prompt', 'Sarabun', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .page-fade { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen font-sans flex flex-col justify-between">
+<body class="bg-slate-50 text-slate-800">
 
-    <!-- Header Navigation -->
-    <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-white text-indigo-700 p-2.5 rounded-lg shadow-inner flex items-center justify-center">
-                    <i class="fa-solid fa-microchip text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-wide">ข้อสอบสเมิร์ฟทู</h1>
-                    <p class="text-xs text-indigo-200">แบบทดสอบ 15 ข้อ</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="switchScreen('home')" class="bg-white/10 hover:bg-white/20 transition px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                    <i class="fa-solid fa-house"></i> หน้าแรก
-                </button>
-                <button onclick="openAdminModal()" class="bg-yellow-500 hover:bg-yellow-600 text-slate-950 transition px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-user-tie"></i> แดชบอร์ด Admin
-                </button>
-            </div>
-        </div>
-    </header>
+    <script type="module">
+        // 1. นำเข้าโมดูล Firebase (Firebase SDK v10)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            getDocs, 
+            collection, 
+            runTransaction, 
+            writeBatch 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
-
-        <!-- ==================== SCREEN 1: HOME PAGE ==================== -->
-        <section id="screen-home" class="page-fade space-y-8 py-4">
-            <!-- Hero Banner -->
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 gap-0 border border-slate-100">
-                <div class="p-8 md:p-12 md:col-span-7 flex flex-col justify-center space-y-6">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 self-start">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> ข้อสอบประเมินผล
-                    </span>
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight">
-                        ระบบทำข้อสอบและรายงานผลสอบ
-                    </h2>
-                    <p class="text-slate-600 text-lg leading-relaxed">
-                        แบบทดสอบ 15 ข้อ
-                    </p>
-                    <div class="flex flex-wrap gap-4 pt-2">
-                        <div class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl">
-                            <i class="fa-solid fa-list-check text-indigo-600"></i>
-                            <span>ข้อสอบ 15 ข้อ</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl">
-                            <i class="fa-solid fa-clock text-indigo-600"></i>
-                            <span id="hero-time-label">เวลาทำสอบ 166 นาที</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="md:col-span-5 bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-100 p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-100">
-                    <div class="rounded-2xl shadow-lg border-4 border-white w-full h-48 md:h-64 bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
-                        <div class="grid grid-cols-2 gap-4 text-white/90">
-                            <i class="fa-solid fa-list-check text-5xl"></i>
-                            <i class="fa-solid fa-square-poll-vertical text-5xl"></i>
-                            <i class="fa-solid fa-graduation-cap text-5xl"></i>
-                            <i class="fa-solid fa-clipboard-check text-5xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Panels: Registration and Lookup -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <!-- Registration to Take Quiz (Left Panel) -->
-                <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 border border-slate-100 lg:col-span-7 space-y-6">
-                    <div class="border-b border-slate-100 pb-4">
-                        <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <i class="fa-solid fa-user-pen text-indigo-600"></i> ข้อมูลผู้เข้าทดสอบ
-                        </h3>
-                        <p class="text-sm text-slate-500">กรุณากรอกข้อมูลส่วนบุคคลที่ถูกต้องเพื่อบันทึกผลสอบเข้าสู่ระบบ</p>
-                    </div>
-
-                    <form id="form-register" onsubmit="startQuiz(event)" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1.5">User ID (รหัสผู้ใช้งานสำหรับดูคะแนน) *</label>
-                            <input type="text" id="reg-uid" required placeholder="ตัวอย่าง: UID82101" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1.5">ชื่อ *</label>
-                            <input type="text" id="reg-name" required placeholder="กมล" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none">
-                        </div>
-
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 text-lg">
-                            <i class="fa-solid fa-play-circle"></i> เริ่มทำข้อสอบของท่าน
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Score Lookup Section (Right Panel) -->
-                <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl shadow-lg p-6 md:p-8 lg:col-span-5 flex flex-col justify-between space-y-6">
-                    <div>
-                        <h3 class="text-xl font-bold flex items-center gap-2">
-                            <i class="fa-solid fa-magnifying-glass text-indigo-300"></i> ตรวจสอบผลสอบรายบุคคล
-                        </h3>
-                        <p class="text-indigo-200 text-sm mt-1">ใส่ User ID ของท่านเพื่อค้นหาผลคะแนนที่สอบไปแล้ว</p>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-1.5">ป้อน User ID ของท่าน</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                                    <i class="fa-solid fa-key"></i>
-                                </span>
-                                <input type="text" id="lookup-uid" placeholder="เช่น UID82101" class="w-full bg-white/10 border border-white/20 focus:bg-white/15 focus:border-indigo-400 transition rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 outline-none">
-                            </div>
-                        </div>
-                        <button onclick="lookupUserScore()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-bold py-3.5 rounded-xl transition shadow-md flex items-center justify-center gap-2">
-                            ค้นหาผลคะแนนสอบ <i class="fa-solid fa-circle-arrow-right"></i>
-                        </button>
-                    </div>
-
-                    <!-- Result output area (hidden initially) -->
-                    <div id="lookup-result-box" class="hidden bg-white/10 p-4 rounded-xl border border-white/10 space-y-2 text-sm">
-                        <div class="flex justify-between border-b border-white/10 pb-1.5">
-                            <span class="text-indigo-300">ชื่อนักเรียน:</span>
-                            <span id="lookup-name" class="font-bold"></span>
-                        </div>
-                        <div class="flex justify-between items-center pt-1.5">
-                            <span class="text-indigo-300">คะแนนที่ได้:</span>
-                            <div class="flex items-center gap-2">
-                                <span id="lookup-score" class="font-bold text-lg text-emerald-400">0/15</span>
-                                <span id="lookup-badge" class="px-2 py-0.5 rounded text-xs font-bold">ผ่าน</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== SCREEN 2: ACTIVE QUIZ ==================== -->
-        <section id="screen-quiz" class="hidden page-fade space-y-6">
-            <!-- Fixed Info Bar & Timer -->
-            <div class="bg-white rounded-2xl shadow-md p-4 flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-100">
-                <div class="flex flex-wrap items-center gap-4 text-sm">
-                    <div class="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-xl font-bold">
-                        <i class="fa-solid fa-user"></i> <span id="quiz-student-info">เด็กหญิงสิรินธร</span>
-                    </div>
-                    <div class="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-xl font-bold">
-                        User ID: <span id="quiz-student-uid" class="font-mono">UID82101</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-1.5 text-rose-600 font-bold text-lg bg-rose-50 px-4 py-2 rounded-xl animate-pulse">
-                        <i class="fa-solid fa-hourglass-half"></i>
-                        <span id="quiz-timer">00:00</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quiz Layout: Navigation (Sidebar) + Question Container -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <!-- Question Navigation Sidebar -->
-                <div class="lg:col-span-3 bg-white rounded-2xl p-4 shadow-md border border-slate-100 space-y-4">
-                    <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-2">แผนผังคำถาม (15 ข้อ)</h4>
-                    <div class="grid grid-cols-5 gap-1.5" id="nav-btn-grid">
-                        <!-- Generated dynamically -->
-                    </div>
-
-                    <div class="pt-2">
-                        <button onclick="confirmSubmitQuiz()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> ส่งคำตอบตรวจผลสอบ
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Active Question Details -->
-                <div class="lg:col-span-9 space-y-6">
-                    <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 border border-slate-100">
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
-                            <div>
-                                <h3 id="quiz-q-num" class="text-xl font-bold text-slate-800 mt-1.5">คำถามข้อที่ 1</h3>
-                            </div>
-                            <span class="text-xs font-bold text-slate-400">ข้อละ 1 คะแนน</span>
-                        </div>
-
-                        <!-- Question Text / Code Box -->
-                        <div class="space-y-6">
-                            <p id="quiz-q-text" class="text-lg text-slate-900 font-semibold leading-relaxed"></p>
-
-                            <!-- Embedded Code Snippet / Context Box (Conditionally updated via JS) -->
-                            <div id="quiz-code-box" class="hidden bg-slate-900 text-slate-100 p-4 rounded-xl font-mono text-sm shadow-inner relative overflow-x-auto">
-                                <div class="absolute right-3 top-3 bg-white/10 text-xs text-white/50 px-2 py-0.5 rounded uppercase">Code</div>
-                                <pre id="quiz-code-content" class="whitespace-pre"></pre>
-                            </div>
-
-                            <!-- Options Grid -->
-                            <div id="quiz-options" class="grid grid-cols-1 gap-3.5">
-                                <!-- Generated Dynamically -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Navigation Action Buttons -->
-                    <div class="flex justify-between items-center gap-4">
-                        <button onclick="prevQuestion()" id="btn-prev-q" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold px-6 py-3.5 rounded-xl transition shadow-sm flex items-center gap-2">
-                            <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-                        </button>
-                        <button onclick="nextQuestion()" id="btn-next-q" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-xl transition shadow flex items-center gap-2 ml-auto">
-                            ข้อถัดไป <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== SCREEN 3: RESULTS SUMMARY ==================== -->
-        <section id="screen-result" class="hidden page-fade space-y-8">
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 text-center p-8 md:p-12 space-y-6">
-                <!-- Visual score indicator -->
-                <div class="mx-auto w-36 h-36 md:w-44 md:h-44 rounded-full border-8 flex flex-col items-center justify-center shadow-lg" id="score-ring-color">
-                    <span id="result-total-score" class="text-4xl md:text-5xl font-black text-slate-800">0</span>
-                    <span class="text-slate-400 font-bold border-t border-slate-200 pt-0.5 mt-1 text-xs md:text-sm uppercase tracking-widest">เต็ม 15 คะแนน</span>
-                </div>
-
-                <div class="max-w-xl mx-auto space-y-3">
-                    <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900">
-                        ยินดีด้วย! ท่านทำแบบทดสอบเสร็จเรียบร้อยแล้ว
-                    </h2>
-                    <p id="result-user-summary" class="text-slate-600">
-                        ผลการทดสอบของท่านได้รับการบันทึกเรียบร้อยแล้ว
-                    </p>
-                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold" id="result-pass-badge">
-                        <i class="fa-solid fa-circle-check"></i> ผ่านเกณฑ์การทดสอบ
-                    </div>
-                </div>
-
-                <div class="pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button onclick="openReviewFromResult()" class="bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-bold px-8 py-3.5 rounded-xl transition flex items-center gap-2">
-                        <i class="fa-solid fa-list-check"></i> ดูรายละเอียดคำตอบรายข้อ
-                    </button>
-                    <button onclick="backToHome()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-xl transition shadow-lg">
-                        กลับสู่หน้าหลักระบบ
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== SCREEN 4: TEACHER DASHBOARD ==================== -->
-        <section id="screen-admin" class="hidden page-fade space-y-6">
-            <!-- Admin Top Bar -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-nodes text-indigo-600"></i> แดชบอร์ดวิเคราะห์ผลคะแนนสอบ
-                    </h2>
-                    <p class="text-slate-500 text-sm">ตรวจสอบคะแนน ดูคำตอบรายข้อของนักเรียนแต่ละคน และดาวน์โหลดออกเป็นไฟล์ Excel</p>
-                </div>
-                <!-- Action Tools -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="injectMockData()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3.5 py-2 rounded-lg text-xs transition flex items-center gap-1">
-                        <i class="fa-solid fa-flask"></i> จำลองคะแนนทดสอบ
-                    </button>
-                    <button onclick="clearAllScores()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3.5 py-2 rounded-lg text-xs transition flex items-center gap-1 border border-rose-200">
-                        <i class="fa-solid fa-trash-can"></i> ล้างข้อมูลผลสอบทั้งหมด
-                    </button>
-                    <button onclick="switchScreen('home')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1 shadow-sm">
-                        <i class="fa-solid fa-circle-arrow-left"></i> ออกจากระบบหลังบ้าน
-                    </button>
-                </div>
-            </div>
-
-            <!-- Global statistics summary widgets -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-indigo-50 text-indigo-600 p-3.5 rounded-xl"><i class="fa-solid fa-users text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">นักเรียนเข้าสอบทั้งหมด</span>
-                        <span id="admin-stat-total" class="text-2xl font-bold text-slate-900">0 คน</span>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-xl"><i class="fa-solid fa-square-poll-vertical text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">คะแนนเฉลี่ย</span>
-                        <span id="admin-stat-avg" class="text-2xl font-bold text-slate-900">0.0 คะแนน</span>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-teal-50 text-teal-600 p-3.5 rounded-xl"><i class="fa-solid fa-circle-check text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">อัตราการสอบผ่าน</span>
-                        <span id="admin-stat-pass-rate" class="text-2xl font-bold text-slate-900">0%</span>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-yellow-50 text-yellow-600 p-3.5 rounded-xl"><i class="fa-solid fa-bolt-lightning text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">คะแนนสูงสุด</span>
-                        <span id="admin-stat-max" class="text-2xl font-bold text-slate-900">0 คะแนน</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Result table -->
-            <div class="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex justify-between items-center">
-                    <span id="admin-loading-indicator" class="hidden text-xs text-slate-400 font-semibold flex items-center gap-2">
-                        <i class="fa-solid fa-circle-notch spin"></i> กำลังโหลดข้อมูล...
-                    </span>
-                    <span></span>
-                    <button id="btn-export-excel" onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-file-excel"></i> ส่งออกเป็น Excel (CSV)
-                    </button>
-                </div>
-
-                <div class="p-6 overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-slate-400 uppercase text-xs font-bold bg-slate-50/50">
-                                <th class="py-3.5 px-4 text-center">User ID</th>
-                                <th class="py-3.5 px-4">ชื่อ</th>
-                                <th class="py-3.5 px-4 text-center">คะแนนรวม (15)</th>
-                                <th class="py-3.5 px-4 text-center">ผลการประเมิน</th>
-                                <th class="py-3.5 px-4 text-center">วันเวลาทำข้อสอบ</th>
-                                <th class="py-3.5 px-4 text-center">คำตอบรายข้อ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-table-rows" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Dynamic Content -->
-                        </tbody>
-                    </table>
-
-                    <!-- Table empty state -->
-                    <div id="admin-empty-state" class="hidden py-12 text-center space-y-3">
-                        <div class="text-slate-300"><i class="fa-solid fa-folder-open text-5xl"></i></div>
-                        <p class="text-slate-500 font-semibold">ยังไม่มีผู้สอบส่งคำตอบ</p>
-                        <p class="text-xs text-slate-400">กดปุ่ม "จำลองคะแนนทดสอบ" เพื่อสุ่มข้อมูลเพื่อการสาธิตรายงาน</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer block -->
-    <footer class="bg-slate-100 border-t border-slate-200 text-slate-500 py-6 text-center text-sm">
-        <div class="max-w-7xl mx-auto px-4 space-y-2">
-            <p>© 2026 ระบบประเมินผลออนไลน์</p>
-        </div>
-    </footer>
-
-    <!-- ==================== ADMIN PASSWORD MODAL ==================== -->
-    <div id="admin-auth-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-100 page-fade">
-            <div class="p-5 bg-gradient-to-r from-indigo-700 to-indigo-800 text-white flex justify-between items-center">
-                <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-lock"></i> ป้อนรหัสผ่านหลังบ้าน</h3>
-                <button onclick="closeAdminModal()" class="text-white/60 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-6 space-y-4">
-                <p class="text-slate-500 text-xs">ระบุรหัสผ่านสำหรับการดูคะแนนรวมและส่งออก Excel (รหัสเริ่มต้นของระบบคือ <strong class="text-indigo-600">1122</strong>)</p>
-                <div>
-                    <input type="password" id="admin-passcode-input" placeholder="ป้อนรหัสผ่าน..." class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition outline-none text-center font-mono">
-                    <p id="admin-auth-error" class="hidden text-rose-500 text-xs mt-1.5 text-center font-semibold">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</p>
-                </div>
-                <button onclick="submitAdminAuth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition">
-                    เข้าสู่ระบบตรวจสอบ
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== ANSWER REVIEW MODAL (per-question breakdown) ==================== -->
-    <div id="review-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-slate-100 page-fade flex flex-col">
-            <div class="p-5 bg-gradient-to-r from-indigo-700 to-indigo-800 text-white flex justify-between items-center shrink-0">
-                <div>
-                    <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-list-check"></i> รายละเอียดคำตอบรายข้อ</h3>
-                    <p id="review-modal-subtitle" class="text-xs text-indigo-200 mt-0.5"></p>
-                </div>
-                <button onclick="closeReviewModal()" class="text-white/60 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div id="review-modal-body" class="p-5 space-y-3 overflow-y-auto">
-                <!-- Generated dynamically -->
-            </div>
-        </div>
-    </div>
-
-
-<script type="module">
-        // ------------------ FIREBASE SETUP (Firestore as the data store) ------------------
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import {
-            getFirestore, collection, doc, getDoc, getDocs, runTransaction, writeBatch
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+        // 2. การตั้งค่า Firebase (กรุณานำข้อมูลจาก Firebase Console ของคุณมาใส่ตรงนี้)
         const firebaseConfig = {
-            apiKey: "AIzaSyDBVIR_170wrfJsQOPB2lz3VYm8pxf98qc",
-            authDomain: "smurf2exam.firebaseapp.com",
-            projectId: "smurf2exam",
-            storageBucket: "smurf2exam.firebasestorage.app",
-            messagingSenderId: "908252045634",
-            appId: "1:908252045634:web:af7c3bd0093a754ae5a8db"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const db = getFirestore(firebaseApp);
+        // เริ่มการทำงานของ Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // Every student's result is one Firestore document, and the document ID
-        // IS the student's UID. That's what makes UID uniqueness possible:
-        // Firestore document IDs are unique by definition, so two students can
-        // never silently share one record, and a duplicate submission attempt
-        // can be caught deterministically (see submitQuizAnswers below).
-        const SCORES_COLLECTION = 'examScores';
+        // ชื่อ Collection ใน Firestore สำหรับบันทึกคะแนน
+        const SCORES_COLLECTION = "student_scores"; 
 
-        // ------------------ EXAM DATABASE (15 Questions) ------------------
+        // 3. ข้อมูลคำถามข้อสอบ (EXAM QUESTIONS)
         const EXAM_QUESTIONS = [
-            { id: 1,  qText: "ไฝที่ปากของกีรติอยู่ที่ไหน", code: null, options: [{key:"ก",text:"หน้าผาก"},
-            {key:"ข",text:"คาง"},
-            {key:"ค",text:"ซ้าย"},
-            {key:"ง",text:"ขวา"}],
-            answer: "ง" },
-            { id: 2,  qText: "ครัวซองของกมลอยู่ที่ไหน", code: null, options: [{key:"ก",text:"ขาซ้าย"},
-            {key:"ข",text:"ข้อเท้าซ้าย"},
-            {key:"ค",text:"ขาขวา"},
-            {key:"ง",text:"ข้อเท้าขวา"}],
-            answer: "ค" },
-            { id: 3,  qText: "กลุ่มสเมิร์ฟทูสร้างขึ้นปีไหน", code: null, options: [{key:"ก",text:"ป.1"},
-            {key:"ข",text:"ป.2"},
-            {key:"ค",text:"ป.3"},
-            {key:"ง",text:"ป.4"}],
-            answer: "ข" },
-            { id: 4,  qText: "รหัสลับคือไร", code: null, options: [{key:"ก",text:"ผักตบชวา"},
-            {key:"ข",text:"ผักกาด"},
-            {key:"ค",text:"อำยัมมันแหย่มันย้อ"},
-            {key:"ง",text:"Paigum007"}],
-            answer: "ก" },
-            { id: 5,  qText: "กมลเคยอยู่แรงค์อะไรใน Call of Duty Mobile", code: null, options: [{key:"ก",text:"Rookie (แรงค์ที่กากสุด)"},
-            {key:"ข",text:"Master (รองจาก Grandmaster)"},
-            {key:"ค",text:"Grandmaster (แรงค์เกือบโหดสุด)"},
-            {key:"ง",text:"Legendary (แรงค์โหดสุด)"}],
-            answer: "ง" },
-            { id: 6,  qText: "เฉลิมศักดิ์ย้ายไปตอนไหน", code: null, options: [{key:"ก",text:"ป.3"},
-            {key:"ข",text:"ป.4"},
-            {key:"ค",text:"ป.5"},
-            {key:"ง",text:"ป.6"}],
-            answer: "ค" },
-            { id: 7,  qText: "กมลเคยชอบใคร", code: null, options: [{key:"ก",text:"ตะวัน"},
-            {key:"ข",text:"แม่เบสท์"},
-            {key:"ค",text:"โฟลคหญิง"},
-            {key:"ง",text:"โฟลคชาย"}],
-            answer: "ค" },
-            { id: 8,  qText: "ธนวัฒน์สูงเท่าไหร", code: null, options: [{key:"ก",text:"120-130"},
-            {key:"ข",text:"131-140"},
-            {key:"ค",text:"141-150"},
-            {key:"ง",text:"150+"}],
-            answer: "ข" },
-            { id: 9,  qText: "กมลซ้อมวันไหนบ้าง", code: null, options: [{key:"ก",text:"เสาร์ - อาทิตย์"},
-            {key:"ข",text:"พฤหัสบดี - ศุกร์"},
-            {key:"ค",text:"พฤหัสบดี - อาทิตย์"},
-            {key:"ง",text:"ทุกวัน"}],
-            answer: "ข" },
-            { id: 10,  qText: "เบสท์ชอบใคร", code: null, options: [{key:"ก",text:"ตะนอย"},
-            {key:"ข",text:"กัสจัง"},
-            {key:"ค",text:"ซูกัส"},
-            {key:"ง",text:"ฟองโฟม"}],
-            answer: "ก" },
-            { id: 11,  qText: "ตุลาคมเก่งวิชาอะไร", code: null, options: [{key:"ก",text:"คณิตศาสตร์"},
-            {key:"ข",text:"วิทยาศาสตร์"},
-            {key:"ค",text:"ภาษาไทย"},
-            {key:"ง",text:"ทุกวิชา"}],
-            answer: "ก" },
-            { id: 12,  qText: "ใครเป็นคนสร้างสเมิร์ฟทู", code: null, options: [{key:"ก",text:"กมล"},
-            {key:"ข",text:"เฉลิมศักดิ"},
-            {key:"ค",text:"ตุลาคม"},
-            {key:"ง",text:"เบสท์"}],
-            answer: "ข" },
-            { id: 13,  qText: "ชนาทิป", code: null, options: [{key:"ก",text:"-1"},
-            {key:"ข",text:"0"},
-            {key:"ค",text:"1"},
-            {key:"ง",text:"2"}],
-            answer: "ง" },
-            { id: 14,  qText: "ตุลาคมเกิดวัน/เดือนไหน", code: null, options: [{key:"ก",text:"9/9"},
-            {key:"ข",text:"10/10"},
-            {key:"ค",text:"15/10"},
-            {key:"ง",text:"11/10"}],
-            answer: "ข" },
-            { id: 15,  qText: "เฉลิมศักดิ์ตัดผมทรงไร", code: null, options: [{key:"ก",text:"ทูบล็อค"},
-            {key:"ข",text:"รองทรง"},
-            {key:"ค",text:"กระลาครอบ"},
-            {key:"ง",text:"แสกกลาง"}],
-            answer: "ค" },
+            // หมายเหตุ: คุณสามารถเพิ่มข้อ 1 ถึง 10 ตรงนี้ได้ในอนาคตครับ
+            { 
+                id: 11,  
+                qText: "ตุลาคมเก่งวิชาอะไร", 
+                code: null, 
+                options: [
+                    {key:"ก", text:"คณิตศาสตร์"},
+                    {key:"ข", text:"วิทยาศาสตร์"},
+                    {key:"ค", text:"ภาษาไทย"},
+                    {key:"ง", text:"ทุกวิชา"}
+                ],
+                answer: "ก" 
+            },
+            { 
+                id: 12,  
+                qText: "ใครเป็นคนสร้างสเมิร์ฟทู", 
+                code: null, 
+                options: [
+                    {key:"ก", text:"กมล"},
+                    {key:"ข", text:"เฉลิมศักดิ"},
+                    {key:"ค", text:"ตุลาคม"},
+                    {key:"ง", text:"เบสท์"}
+                ],
+                answer: "ข" 
+            },
+            { 
+                id: 13,  
+                qText: "ชนาทิป", 
+                code: null, 
+                options: [
+                    {key:"ก", text:"-1"},
+                    {key:"ข", text:"0"},
+                    {key:"ค", text:"1"},
+                    {key:"ง", text:"2"}
+                ],
+                answer: "ง" 
+            },
+            { 
+                id: 14,  
+                qText: "ตุลาคมเกิดวัน/เดือนไหน", 
+                code: null, 
+                options: [
+                    {key:"ก", text:"9/9"},
+                    {key:"ข", text:"10/10"},
+                    {key:"ค", text:"15/10"},
+                    {key:"ง", text:"11/10"}
+                ],
+                answer: "ข" 
+            },
+            { 
+                id: 15,  
+                qText: "เฉลิมศักดิ์ตัดผมทรงไร", 
+                code: null, 
+                options: [
+                    {key:"ก", text:"ทูบล็อค"},
+                    {key:"ข", text:"รองทรง"},
+                    {key:"ค", text:"กระลาครอบ"},
+                    {key:"ง", text:"แสกกลาง"}
+                ],
+                answer: "ค" 
+            }
         ];
 
-        // ------------------ GLOBAL APPLICATION STATE ------------------
+        // 4. สถานะแอปพลิเคชันหลัก (GLOBAL APPLICATION STATE)
         let currentScreen = 'home';
         let currentQuestionIndex = 0;
         let userAnswers = {};
         let studentInfo = { uid: '', name: '' };
         let examTimer = null;
         let timeRemaining = 9999;
-
-        // Keeps track of the record currently open in the review modal.
-        // Only the student's OWN just-submitted result (this session) and the
-        // Admin dashboard can open the per-question review; the public UID
-        // lookup on the homepage intentionally only ever shows the total score.
         let lastSubmittedRecord = null;
 
-        // Initialize App
+        // เริ่มต้นการทำงานของแอปพลิเคชันเมื่อโหลดหน้าเว็บ
         window.onload = function() {
             buildNavGrid();
             switchScreen('home');
         };
 
-        // ------------------ FIRESTORE DATA HELPERS ------------------
+        // 5. ตัวช่วยดึงข้อมูลจาก FIRESTORE (DATA HELPERS)
         async function getAllRecords() {
             const snap = await getDocs(collection(db, SCORES_COLLECTION));
             const records = [];
@@ -556,9 +133,10 @@
             return snap.exists() ? { uid: snap.id, ...snap.data() } : null;
         }
 
-        // Build the 1-15 navigation button grid
+        // 6. สร้างปุ่มนำทางลัดข้อ 1-15 (Navigation Grid)
         function buildNavGrid() {
             const grid = document.getElementById('nav-btn-grid');
+            if (!grid) return; // ป้องกันพังหากไม่มี Element นี้ใน HTML
             grid.innerHTML = '';
             EXAM_QUESTIONS.forEach(q => {
                 const btn = document.createElement('button');
@@ -570,24 +148,29 @@
             });
         }
 
-        // Helper to change displays smoothly
+        // สลับหน้าจอแอปพลิเคชัน
         function switchScreen(screenId) {
             currentScreen = screenId;
-            document.getElementById('screen-home').classList.add('hidden');
-            document.getElementById('screen-quiz').classList.add('hidden');
-            document.getElementById('screen-result').classList.add('hidden');
-            document.getElementById('screen-admin').classList.add('hidden');
+            
+            const screens = ['home', 'quiz', 'result', 'admin'];
+            screens.forEach(s => {
+                const el = document.getElementById('screen-' + s);
+                if (el) el.classList.add('hidden');
+            });
 
-            document.getElementById('screen-' + screenId).classList.remove('hidden');
+            const targetScreen = document.getElementById('screen-' + screenId);
+            if (targetScreen) targetScreen.classList.remove('hidden');
+            
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
             if (screenId === 'home') {
                 clearInterval(examTimer);
-                document.getElementById('form-register').reset();
+                const form = document.getElementById('form-register');
+                if (form) form.reset();
             }
         }
 
-        // ------------------ QUIZ INTAKE / START ------------------
+        // เริ่มทำข้อสอบ
         async function startQuiz(event) {
             event.preventDefault();
 
@@ -599,8 +182,6 @@
                 return;
             }
 
-            // UID uniqueness check: if this UID has already submitted a result,
-            // block starting the exam again under the same ID.
             const submitBtn = event.target.querySelector('button[type="submit"]');
             const originalBtnHtml = submitBtn.innerHTML;
             submitBtn.disabled = true;
@@ -631,8 +212,10 @@
             userAnswers = {};
             currentQuestionIndex = 0;
 
-            document.getElementById('quiz-student-info').innerHTML = `<i class="fa-solid fa-user"></i> ${studentInfo.name}`;
-            document.getElementById('quiz-student-uid').textContent = studentInfo.uid;
+            const studentInfoEl = document.getElementById('quiz-student-info');
+            const studentUidEl = document.getElementById('quiz-student-uid');
+            if (studentInfoEl) studentInfoEl.innerHTML = `<i class="fa-solid fa-user"></i> ${studentInfo.name}`;
+            if (studentUidEl) studentUidEl.textContent = studentInfo.uid;
 
             timeRemaining = 9999;
             updateTimerDisplay();
@@ -652,71 +235,83 @@
         }
 
         function updateTimerDisplay() {
+            const timerEl = document.getElementById('quiz-timer');
+            if (!timerEl) return;
             let minutes = Math.floor(timeRemaining / 60);
             let seconds = timeRemaining % 60;
-            document.getElementById('quiz-timer').textContent =
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        // ------------------ EXAM INTERACTION LAYOUT ------------------
+        // แสดงผลคำถามและตัวเลือกในแต่ละข้อ
         function renderQuestion() {
             const q = EXAM_QUESTIONS[currentQuestionIndex];
+            if (!q) return;
 
-            document.getElementById('quiz-q-num').textContent = `คำถามข้อที่ ${q.id} จาก 15 ข้อ`;
-            document.getElementById('quiz-q-text').textContent = q.qText;
+            const qNumEl = document.getElementById('quiz-q-num');
+            const qTextEl = document.getElementById('quiz-q-text');
+            if (qNumEl) qNumEl.textContent = `คำถามข้อที่ ${q.id} จาก ${EXAM_QUESTIONS.length} ข้อ`;
+            if (qTextEl) qTextEl.textContent = q.qText;
 
             const codeBox = document.getElementById('quiz-code-box');
-            if (q.code) {
-                codeBox.classList.remove('hidden');
-                document.getElementById('quiz-code-content').textContent = q.code;
-            } else {
-                codeBox.classList.add('hidden');
+            if (codeBox) {
+                if (q.code) {
+                    codeBox.classList.remove('hidden');
+                    const codeContent = document.getElementById('quiz-code-content');
+                    if (codeContent) codeContent.textContent = q.code;
+                } else {
+                    codeBox.classList.add('hidden');
+                }
             }
 
             const optionsContainer = document.getElementById('quiz-options');
-            optionsContainer.innerHTML = '';
+            if (optionsContainer) {
+                optionsContainer.innerHTML = '';
+                const selectedAnswer = userAnswers[q.id];
 
-            const selectedAnswer = userAnswers[q.id];
+                q.options.forEach(opt => {
+                    const isSelected = selectedAnswer === opt.key;
+                    const optionDiv = document.createElement('div');
+                    optionDiv.onclick = () => selectOption(q.id, opt.key);
+                    optionDiv.className = `p-4 rounded-xl border-2 transition-all duration-150 cursor-pointer flex items-center justify-between ${
+                        isSelected
+                        ? 'border-indigo-600 bg-indigo-50/70 text-indigo-950 font-semibold'
+                        : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-700'
+                    }`;
 
-            q.options.forEach(opt => {
-                const isSelected = selectedAnswer === opt.key;
-                const optionDiv = document.createElement('div');
-                optionDiv.onclick = () => selectOption(q.id, opt.key);
-                optionDiv.className = `p-4 rounded-xl border-2 transition-all duration-150 cursor-pointer flex items-center justify-between ${
-                    isSelected
-                    ? 'border-indigo-600 bg-indigo-50/70 text-indigo-950 font-semibold'
-                    : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-700'
-                }`;
-
-                optionDiv.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${
-                            isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-500 border-slate-300'
-                        }">
-                            ${opt.key}
-                        </span>
-                        <span>${opt.text}</span>
-                    </div>
-                    ${isSelected ? '<i class="fa-solid fa-circle-check text-indigo-600 text-lg"></i>' : ''}
-                `;
-                optionsContainer.appendChild(optionDiv);
-            });
+                    optionDiv.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${
+                                isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-500 border-slate-300'
+                            }">
+                                ${opt.key}
+                            </span>
+                            <span>${opt.text}</span>
+                        </div>
+                        ${isSelected ? '<i class="fa-solid fa-circle-check text-indigo-600 text-lg"></i>' : ''}
+                    `;
+                    optionsContainer.appendChild(optionDiv);
+                });
+            }
 
             const prevBtn = document.getElementById('btn-prev-q');
             const nextBtn = document.getElementById('btn-next-q');
 
-            if (currentQuestionIndex === 0) {
-                prevBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                prevBtn.disabled = true;
-            } else {
-                prevBtn.classList.remove('opacity-40', 'cursor-not-allowed');
-                prevBtn.disabled = false;
+            if (prevBtn) {
+                if (currentQuestionIndex === 0) {
+                    prevBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                    prevBtn.disabled = true;
+                } else {
+                    prevBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+                    prevBtn.disabled = false;
+                }
             }
 
-            if (currentQuestionIndex === EXAM_QUESTIONS.length - 1) {
-                nextBtn.innerHTML = `ทบทวนผลสอบ <i class="fa-solid fa-circle-info"></i>`;
-            } else {
-                nextBtn.innerHTML = `ข้อถัดไป <i class="fa-solid fa-arrow-right"></i>`;
+            if (nextBtn) {
+                if (currentQuestionIndex === EXAM_QUESTIONS.length - 1) {
+                    nextBtn.innerHTML = `ทบทวนผลสอบ <i class="fa-solid fa-circle-info"></i>`;
+                } else {
+                    nextBtn.innerHTML = `ข้อถัดไป <i class="fa-solid fa-arrow-right"></i>`;
+                }
             }
 
             updateQuestionMapHighlight();
@@ -728,7 +323,8 @@
         }
 
         function jumpToQuestion(qNum) {
-            currentQuestionIndex = qNum - 1;
+            currentQuestionIndex = qNum - 11; // แปลงเลขข้อสอบ 11-15 ให้เป็น Index 0-4 ของอาร์เรย์
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= EXAM_QUESTIONS.length) return;
             renderQuestion();
         }
 
@@ -749,10 +345,11 @@
         }
 
         function updateQuestionMapHighlight() {
-            for (let i = 1; i <= EXAM_QUESTIONS.length; i++) {
-                const btn = document.getElementById(`nav-btn-${i}`);
-                const isSelected = userAnswers[i] !== undefined;
-                const isActive = (i - 1) === currentQuestionIndex;
+            EXAM_QUESTIONS.forEach((q, idx) => {
+                const btn = document.getElementById(`nav-btn-${q.id}`);
+                if (!btn) return;
+                const isSelected = userAnswers[q.id] !== undefined;
+                const isActive = idx === currentQuestionIndex;
 
                 let classes = "h-9 rounded-lg font-semibold text-sm transition border flex items-center justify-center";
                 classes += isSelected
@@ -762,12 +359,13 @@
                     classes += " ring-4 ring-indigo-300 scale-105";
                 }
                 btn.className = classes;
-            }
+            });
         }
 
-        // ------------------ SUBMIT & GRADING SYSTEM ------------------
+        // 7. การส่งคำตอบและระบบตรวจคะแนน (SUBMIT & GRADING SYSTEM)
         function confirmSubmitQuiz() {
-            const unansweredCount = EXAM_QUESTIONS.length - Object.keys(userAnswers).length;
+            const answeredCount = Object.keys(userAnswers).length;
+            const unansweredCount = EXAM_QUESTIONS.length - answeredCount;
             let confirmationMsg = "ต้องการส่งคำตอบเพื่อประเมินผลสอบจริงหรือไม่?";
 
             if (unansweredCount > 0) {
@@ -798,12 +396,7 @@
                 submittedAt: new Date().toLocaleString('th-TH')
             };
 
-            // Write the result inside a Firestore transaction: read the doc, and
-            // ONLY create it if it doesn't already exist. This makes the UID
-            // uniqueness rule airtight even if two tabs/devices raced past the
-            // earlier check in startQuiz() at nearly the same moment — Firestore
-            // guarantees the transaction that reads "not exists" wins the write,
-            // and the other one is rejected.
+            // บันทึกผ่าน Firestore Transaction เพื่อป้องกันการใช้ ID ชนกัน
             try {
                 await runTransaction(db, async (transaction) => {
                     const ref = doc(db, SCORES_COLLECTION, studentInfo.uid);
@@ -826,23 +419,30 @@
 
             lastSubmittedRecord = scoreRecord;
 
-            document.getElementById('result-total-score').textContent = totalScore;
-            document.getElementById('result-user-summary').innerHTML = `
-                ผลการสอบของ <strong>${studentInfo.name}</strong>
-                (User ID: <span class="font-mono text-xs font-bold">${studentInfo.uid}</span>) ได้รับการบันทึกแล้ว
-            `;
+            const scoreEl = document.getElementById('result-total-score');
+            const summaryEl = document.getElementById('result-user-summary');
+            if (scoreEl) scoreEl.textContent = totalScore;
+            if (summaryEl) {
+                summaryEl.innerHTML = `
+                    ผลการสอบของ <strong>${studentInfo.name}</strong>
+                    (User ID: <span class="font-mono text-xs font-bold">${studentInfo.uid}</span>) ได้รับการบันทึกแล้ว
+                `;
+            }
 
             const ring = document.getElementById('score-ring-color');
             const passBadge = document.getElementById('result-pass-badge');
 
-            if (totalScore >= 10) {
-                ring.className = "mx-auto w-36 h-36 md:w-44 md:h-44 rounded-full border-8 border-emerald-500 bg-emerald-50/30 flex flex-col items-center justify-center shadow-lg";
-                passBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-emerald-100 text-emerald-800";
-                passBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> ผ่านเกณฑ์การประเมิน (ผ่าน)`;
-            } else {
-                ring.className = "mx-auto w-36 h-36 md:w-44 md:h-44 rounded-full border-8 border-rose-500 bg-rose-50/30 flex flex-col items-center justify-center shadow-lg";
-                passBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-rose-100 text-rose-800";
-                passBadge.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ไม่ผ่านเกณฑ์ขั้นต่ำ (ปรับปรุง)`;
+            // ข้อสอบทั้งหมดมี 15 ข้อ แต่ถ้าคุณใช้แค่ 5 ข้อ (ข้อ 11-15) อาจปรับตัวเลขเกณฑ์ตรงนี้ตามต้องการครับ (เช่น >= 3 คะแนน)
+            if (ring && passBadge) {
+                if (totalScore >= 10) { 
+                    ring.className = "mx-auto w-36 h-36 md:w-44 md:h-44 rounded-full border-8 border-emerald-500 bg-emerald-50/30 flex flex-col items-center justify-center shadow-lg";
+                    passBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-emerald-100 text-emerald-800";
+                    passBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> ผ่านเกณฑ์การประเมิน (ผ่าน)`;
+                } else {
+                    ring.className = "mx-auto w-36 h-36 md:w-44 md:h-44 rounded-full border-8 border-rose-500 bg-rose-50/30 flex flex-col items-center justify-center shadow-lg";
+                    passBadge.className = "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-rose-100 text-rose-800";
+                    passBadge.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ไม่ผ่านเกณฑ์ขั้นต่ำ (ปรับปรุง)`;
+                }
             }
 
             switchScreen('result');
@@ -852,7 +452,7 @@
             switchScreen('home');
         }
 
-        // ------------------ SCORE LOOKUP COMPONENT ------------------
+        // 8. ส่วนสืบค้นคะแนนสอบด้วยตนเอง (SCORE LOOKUP)
         async function lookupUserScore() {
             const searchUid = document.getElementById('lookup-uid').value.trim().toUpperCase();
             if (!searchUid) {
@@ -872,29 +472,30 @@
             const box = document.getElementById('lookup-result-box');
 
             if (result) {
-                box.classList.remove('hidden');
-                document.getElementById('lookup-name').textContent = result.name;
-                document.getElementById('lookup-score').textContent = `${result.total} / 15`;
+                if (box) box.classList.remove('hidden');
+                const nameEl = document.getElementById('lookup-name');
+                const scoreEl = document.getElementById('lookup-score');
+                const badgeEl = document.getElementById('lookup-badge');
 
-                const badge = document.getElementById('lookup-badge');
-                if (result.total >= 10) {
-                    badge.className = "px-2 py-0.5 rounded text-xs font-bold bg-emerald-500 text-slate-950";
-                    badge.textContent = "ผ่าน";
-                } else {
-                    badge.className = "px-2 py-0.5 rounded text-xs font-bold bg-rose-500 text-white";
-                    badge.textContent = "ปรับปรุง";
+                if (nameEl) nameEl.textContent = result.name;
+                if (scoreEl) scoreEl.textContent = `${result.total} / 15`;
+
+                if (badgeEl) {
+                    if (result.total >= 10) {
+                        badgeEl.className = "px-2 py-0.5 rounded text-xs font-bold bg-emerald-500 text-slate-950";
+                        badgeEl.textContent = "ผ่าน";
+                    } else {
+                        badgeEl.className = "px-2 py-0.5 rounded text-xs font-bold bg-rose-500 text-white";
+                        badgeEl.textContent = "ปรับปรุง";
+                    }
                 }
             } else {
-                box.classList.add('hidden');
+                if (box) box.classList.add('hidden');
                 alert(`ไม่พบประวัติผลการสอบสำหรับ User ID: ${searchUid} ในระบบ`);
             }
         }
 
-        // ------------------ ANSWER REVIEW MODAL (shared by result page / admin) ------------------
-        // Public UID lookup deliberately does NOT open this — it only ever
-        // shows the total score. Per-question detail is available to the
-        // student only right after they submit (their own current session),
-        // and to the teacher via the Admin dashboard.
+        // 9. ระบบตรวจสอบข้อคำตอบย้อนหลัง (ANSWER REVIEW MODAL)
         function openReviewFromResult() {
             if (lastSubmittedRecord) {
                 openReviewModal(lastSubmittedRecord);
@@ -906,7 +507,9 @@
             const body = document.getElementById('review-modal-body');
             const subtitle = document.getElementById('review-modal-subtitle');
 
-            subtitle.textContent = `${record.name} · User ID: ${record.uid} · คะแนน ${record.total}/15`;
+            if (!modal || !body) return;
+
+            if (subtitle) subtitle.textContent = `${record.name} · User ID: ${record.uid} · คะแนน ${record.total}/15`;
             body.innerHTML = '';
 
             const answers = record.answers || {};
@@ -966,19 +569,29 @@
         }
 
         function closeReviewModal() {
-            document.getElementById('review-modal').classList.add('hidden');
+            const modal = document.getElementById('review-modal');
+            if (modal) modal.classList.add('hidden');
         }
 
-        // ------------------ TEACHER ADMIN DASHBOARD ------------------
+        // 10. แผงควบคุมควบคุมของคุณครู (TEACHER ADMIN DASHBOARD)
         function openAdminModal() {
-            document.getElementById('admin-auth-modal').classList.remove('hidden');
-            document.getElementById('admin-passcode-input').focus();
-            document.getElementById('admin-auth-error').classList.add('hidden');
+            const modal = document.getElementById('admin-auth-modal');
+            const input = document.getElementById('admin-passcode-input');
+            const error = document.getElementById('admin-auth-error');
+            
+            if (modal) modal.classList.remove('hidden');
+            if (input) {
+                input.focus();
+                input.value = '';
+            }
+            if (error) error.classList.add('hidden');
         }
 
         function closeAdminModal() {
-            document.getElementById('admin-auth-modal').classList.add('hidden');
-            document.getElementById('admin-passcode-input').value = '';
+            const modal = document.getElementById('admin-auth-modal');
+            if (modal) modal.classList.add('hidden');
+            const input = document.getElementById('admin-passcode-input');
+            if (input) input.value = '';
         }
 
         function submitAdminAuth() {
@@ -988,13 +601,14 @@
                 loadAdminDashboard();
                 switchScreen('admin');
             } else {
-                document.getElementById('admin-auth-error').classList.remove('hidden');
+                const error = document.getElementById('admin-auth-error');
+                if (error) error.classList.remove('hidden');
             }
         }
 
         async function loadAdminDashboard() {
             const indicator = document.getElementById('admin-loading-indicator');
-            indicator.classList.remove('hidden');
+            if (indicator) indicator.classList.remove('hidden');
             let records = [];
             try {
                 records = await getAllRecords();
@@ -1004,17 +618,22 @@
             }
             renderAdminStats(records);
             renderAdminTable(records);
-            indicator.classList.add('hidden');
+            if (indicator) indicator.classList.add('hidden');
         }
 
         function renderAdminStats(records) {
             const totalStudents = records.length;
 
+            const statTotal = document.getElementById('admin-stat-total');
+            const statAvg = document.getElementById('admin-stat-avg');
+            const statPassRate = document.getElementById('admin-stat-pass-rate');
+            const statMax = document.getElementById('admin-stat-max');
+
             if (totalStudents === 0) {
-                document.getElementById('admin-stat-total').textContent = "0 คน";
-                document.getElementById('admin-stat-avg').textContent = "0.0 คะแนน";
-                document.getElementById('admin-stat-pass-rate').textContent = "0%";
-                document.getElementById('admin-stat-max').textContent = "0 คะแนน";
+                if (statTotal) statTotal.textContent = "0 คน";
+                if (statAvg) statAvg.textContent = "0.0 คะแนน";
+                if (statPassRate) statPassRate.textContent = "0%";
+                if (statMax) statMax.textContent = "0 คะแนน";
                 return;
             }
 
@@ -1026,14 +645,12 @@
 
             const maxScore = Math.max(...records.map(r => r.total));
 
-            document.getElementById('admin-stat-total').textContent = `${totalStudents} คน`;
-            document.getElementById('admin-stat-avg').textContent = `${averageScore} คะแนน`;
-            document.getElementById('admin-stat-pass-rate').textContent = `${passRate}%`;
-            document.getElementById('admin-stat-max').textContent = `${maxScore} คะแนน`;
+            if (statTotal) statTotal.textContent = `${totalStudents} คน`;
+            if (statAvg) statAvg.textContent = `${averageScore} คะแนน`;
+            if (statPassRate) statPassRate.textContent = `${passRate}%`;
+            if (statMax) statMax.textContent = `${maxScore} คะแนน`;
         }
 
-        // Keeps the currently loaded admin records around so a click on
-        // "ดูคำตอบ" can locate the right record by uid without re-fetching.
         let adminCachedRecords = [];
 
         function renderAdminTable(records) {
@@ -1042,13 +659,15 @@
 
             const tbody = document.getElementById('admin-table-rows');
             const emptyState = document.getElementById('admin-empty-state');
+            
+            if (!tbody) return;
             tbody.innerHTML = '';
 
             if (sorted.length === 0) {
-                emptyState.classList.remove('hidden');
+                if (emptyState) emptyState.classList.remove('hidden');
                 return;
             } else {
-                emptyState.classList.add('hidden');
+                if (emptyState) emptyState.classList.add('hidden');
             }
 
             sorted.forEach(student => {
@@ -1085,7 +704,7 @@
             }
         }
 
-        // ------------------ EXPORT DATA TO EXCEL (CSV) ------------------
+        // 11. ดึงรายงานคะแนนออกมาเป็นไฟล์ Excel (CSV)
         async function exportToExcel() {
             let records = [];
             try {
@@ -1102,7 +721,7 @@
                 return;
             }
 
-            let csvContent = "\ufeff";
+            let csvContent = "\ufeff"; // BOM สำหรับรักษารูปแบบสระภาษาไทยใน Excel
             csvContent += "User ID,ชื่อ,คะแนนรวม (15 คะแนน),สถานะการประเมิน,วันเวลาทำข้อสอบ\n";
 
             records.forEach(student => {
@@ -1122,7 +741,7 @@
             document.body.removeChild(link);
         }
 
-        // Inject Mock Data (Allows teachers to preview report functionality instantly)
+        // 12. สุ่มจำลองข้อมูลผู้สอบเพื่อใช้สาธิตระบบ (Mock Data)
         async function injectMockData() {
             const firstNames = ["กิตติภพ", "จิรพัฒน์", "ชยุตม์", "ธนพัตน์", "ปกรณ์เกียรติ", "รัชพล", "พีรพล", "ชลสิทธิ์", "ณัฐพงษ์", "มนัสวี", "วรัญญา", "ชลดา", "ทิพยวรรณ", "ขวัญจิรา", "กัญญารัตน์", "พิมพิกา"];
             const lastNames = ["สมบูรณ์", "ดีเลิศ", "แสนดี", "วงศ์ษา", "รุ่งเรือง", "ชื่นชม", "มณีรนิต", "แสงทอง", "สุขใจ", "บุญธรรม", "แก้วงาม", "นามดี", "ยอดรัก", "ทรงเดช", "ศรีบุญ", "เกิดผล"];
@@ -1150,8 +769,6 @@
                 const namePrefix = Math.random() > 0.5 ? "เด็กชาย" : "เด็กหญิง";
                 const fullName = `${namePrefix}${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
 
-                // Generate a plausible mock answer sheet so "ดูคำตอบ" also works
-                // for the randomly-injected demo students, not just real submissions.
                 const mockAnswers = {};
                 EXAM_QUESTIONS.forEach(q => {
                     const keys = q.options.map(o => o.key);
@@ -1181,6 +798,7 @@
             }
         }
 
+        // 13. ฟังก์ชันลบข้อมูลทั้งหมดใน Collection
         async function clearAllScores() {
             if (!confirm("คุณแน่ใจว่าต้องการล้างฐานข้อมูลผลสอบของนักเรียนทั้งหมด? (ข้อมูลนี้จะไม่สามารถกู้คืนได้)")) {
                 return;
@@ -1198,11 +816,8 @@
             }
         }
 
-        // ------------------ EXPOSE FUNCTIONS REFERENCED BY INLINE onclick/onsubmit ------------------
-        // This script runs as a module (needed for the Firebase "import" syntax
-        // above), and module scope is NOT automatically global — so every
-        // function an HTML tag calls via onclick="..." / onsubmit="..." must be
-        // attached to window explicitly, or the browser can't find it.
+        // ==================== WINDOW BINDING ====================
+        // ผูกฟังก์ชันโมดูลขึ้นไปที่ระดับ Global Scope (window) เพื่อรองรับ onclick / onsubmit ใน HTML
         window.switchScreen = switchScreen;
         window.startQuiz = startQuiz;
         window.prevQuestion = prevQuestion;
@@ -1219,6 +834,7 @@
         window.clearAllScores = clearAllScores;
         window.exportToExcel = exportToExcel;
         window.openReviewFromAdmin = openReviewFromAdmin;
+
     </script>
 </body>
 </html>
