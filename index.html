@@ -87,7 +87,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Replaced fragile/expiring Discord CDN image with a reliable inline graphic -->
                 <div class="md:col-span-5 bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-100 p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-100">
                     <div class="rounded-2xl shadow-lg border-4 border-white w-full h-48 md:h-64 bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
                         <div class="grid grid-cols-2 gap-4 text-white/90">
@@ -266,7 +265,10 @@
                     </div>
                 </div>
 
-                <div class="pt-6">
+                <div class="pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button onclick="openReviewFromResult()" class="bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-bold px-8 py-3.5 rounded-xl transition flex items-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> ดูรายละเอียดคำตอบรายข้อ
+                    </button>
                     <button onclick="backToHome()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-xl transition shadow-lg">
                         กลับสู่หน้าหลักระบบ
                     </button>
@@ -282,7 +284,7 @@
                     <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
                         <i class="fa-solid fa-circle-nodes text-indigo-600"></i> แดชบอร์ดวิเคราะห์ผลคะแนนสอบ
                     </h2>
-                    <p class="text-slate-500 text-sm">ตรวจสอบคะแนนและดาวน์โหลดออกเป็นไฟล์ Excel ของท่านอย่างเป็นระเบียบ</p>
+                    <p class="text-slate-500 text-sm">ตรวจสอบคะแนน ดูคำตอบรายข้อของนักเรียนแต่ละคน และดาวน์โหลดออกเป็นไฟล์ Excel</p>
                 </div>
                 <!-- Action Tools -->
                 <div class="flex flex-wrap items-center gap-2">
@@ -351,6 +353,7 @@
                                 <th class="py-3.5 px-4 text-center">คะแนนรวม (15)</th>
                                 <th class="py-3.5 px-4 text-center">ผลการประเมิน</th>
                                 <th class="py-3.5 px-4 text-center">วันเวลาทำข้อสอบ</th>
+                                <th class="py-3.5 px-4 text-center">คำตอบรายข้อ</th>
                             </tr>
                         </thead>
                         <tbody id="admin-table-rows" class="divide-y divide-slate-100 text-slate-700">
@@ -385,7 +388,7 @@
                 <button onclick="closeAdminModal()" class="text-white/60 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4">
-                <p class="text-slate-500 text-xs">ระบุรหัสผ่านสำหรับการดูคะแนนรวมและส่งออก Excel (รหัสเริ่มต้นของระบบคือ <strong class="text-indigo-600">1234</strong>)</p>
+                <p class="text-slate-500 text-xs">ระบุรหัสผ่านสำหรับการดูคะแนนรวมและส่งออก Excel (รหัสเริ่มต้นของระบบคือ <strong class="text-indigo-600">1122</strong>)</p>
                 <div>
                     <input type="password" id="admin-passcode-input" placeholder="ป้อนรหัสผ่าน..." class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition outline-none text-center font-mono">
                     <p id="admin-auth-error" class="hidden text-rose-500 text-xs mt-1.5 text-center font-semibold">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</p>
@@ -393,6 +396,22 @@
                 <button onclick="submitAdminAuth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition">
                     เข้าสู่ระบบตรวจสอบ
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ANSWER REVIEW MODAL (per-question breakdown) ==================== -->
+    <div id="review-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-slate-100 page-fade flex flex-col">
+            <div class="p-5 bg-gradient-to-r from-indigo-700 to-indigo-800 text-white flex justify-between items-center shrink-0">
+                <div>
+                    <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-list-check"></i> รายละเอียดคำตอบรายข้อ</h3>
+                    <p id="review-modal-subtitle" class="text-xs text-indigo-200 mt-0.5"></p>
+                </div>
+                <button onclick="closeReviewModal()" class="text-white/60 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="review-modal-body" class="p-5 space-y-3 overflow-y-auto">
+                <!-- Generated dynamically -->
             </div>
         </div>
     </div>
@@ -405,77 +424,77 @@
             { id: 1,  qText: "ไฝที่ปากของกีรติอยู่ที่ไหน", code: null, options: [{key:"ก",text:"หน้าผาก"},
             {key:"ข",text:"คาง"},
             {key:"ค",text:"ซ้าย"},
-            {key:"ง",text:"ขวา"}], 
+            {key:"ง",text:"ขวา"}],
             answer: "ง" },
             { id: 2,  qText: "ครัวซองของกมลอยู่ที่ไหน", code: null, options: [{key:"ก",text:"ขาซ้าย"},
             {key:"ข",text:"ข้อเท้าซ้าย"},
             {key:"ค",text:"ขาขวา"},
-            {key:"ง",text:"ข้อเท้าขวา"}], 
+            {key:"ง",text:"ข้อเท้าขวา"}],
             answer: "ค" },
             { id: 3,  qText: "กลุ่มสเมิร์ฟทูสร้างขึ้นปีไหน", code: null, options: [{key:"ก",text:"ป.1"},
             {key:"ข",text:"ป.2"},
             {key:"ค",text:"ป.3"},
-            {key:"ง",text:"ป.4"}], 
+            {key:"ง",text:"ป.4"}],
             answer: "ข" },
             { id: 4,  qText: "รหัสลับคือไร", code: null, options: [{key:"ก",text:"ผักตบชวา"},
             {key:"ข",text:"ผักกาด"},
             {key:"ค",text:"อำยัมมันแหย่มันย้อ"},
-            {key:"ง",text:"Paigum007"}], 
+            {key:"ง",text:"Paigum007"}],
             answer: "ก" },
             { id: 5,  qText: "กมลเคยอยู่แรงค์อะไรใน Call of Duty Mobile", code: null, options: [{key:"ก",text:"Rookie (แรงค์ที่กากสุด)"},
             {key:"ข",text:"Master (รองจาก Grandmaster)"},
             {key:"ค",text:"Grandmaster (แรงค์เกือบโหดสุด)"},
-            {key:"ง",text:"Legendary (แรงค์โหดสุด)"}], 
+            {key:"ง",text:"Legendary (แรงค์โหดสุด)"}],
             answer: "ง" },
             { id: 6,  qText: "เฉลิมศักดิ์ย้ายไปตอนไหน", code: null, options: [{key:"ก",text:"ป.3"},
             {key:"ข",text:"ป.4"},
             {key:"ค",text:"ป.5"},
-            {key:"ง",text:"ป.6"}], 
+            {key:"ง",text:"ป.6"}],
             answer: "ค" },
             { id: 7,  qText: "กมลเคยชอบใคร", code: null, options: [{key:"ก",text:"ตะวัน"},
             {key:"ข",text:"แม่เบสท์"},
             {key:"ค",text:"โฟลคหญิง"},
-            {key:"ง",text:"โฟลคชาย"}], 
+            {key:"ง",text:"โฟลคชาย"}],
             answer: "ค" },
             { id: 8,  qText: "ธนวัฒน์สูงเท่าไหร", code: null, options: [{key:"ก",text:"120-130"},
             {key:"ข",text:"131-140"},
             {key:"ค",text:"141-150"},
-            {key:"ง",text:"150+"}], 
+            {key:"ง",text:"150+"}],
             answer: "ข" },
             { id: 9,  qText: "กมลซ้อมวันไหนบ้าง", code: null, options: [{key:"ก",text:"เสาร์ - อาทิตย์"},
             {key:"ข",text:"พฤหัสบดี - ศุกร์"},
             {key:"ค",text:"พฤหัสบดี - อาทิตย์"},
-            {key:"ง",text:"ทุกวัน"}], 
+            {key:"ง",text:"ทุกวัน"}],
             answer: "ข" },
             { id: 10,  qText: "เบสท์ชอบใคร", code: null, options: [{key:"ก",text:"ตะนอย"},
             {key:"ข",text:"กัสจัง"},
             {key:"ค",text:"ซูกัส"},
-            {key:"ง",text:"ฟองโฟม"}], 
+            {key:"ง",text:"ฟองโฟม"}],
             answer: "ก" },
             { id: 11,  qText: "ตุลาคมเก่งวิชาอะไร", code: null, options: [{key:"ก",text:"คณิตศาสตร์"},
             {key:"ข",text:"วิทยาศาสตร์"},
             {key:"ค",text:"ภาษาไทย"},
-            {key:"ง",text:"ทุกวิชา"}], 
+            {key:"ง",text:"ทุกวิชา"}],
             answer: "ก" },
             { id: 12,  qText: "ใครเป็นคนสร้างสเมิร์ฟทู", code: null, options: [{key:"ก",text:"กมล"},
             {key:"ข",text:"เฉลิมศักดิ"},
             {key:"ค",text:"ตุลาคม"},
-            {key:"ง",text:"เบสท์"}], 
+            {key:"ง",text:"เบสท์"}],
             answer: "ข" },
             { id: 13,  qText: "ชนาทิป", code: null, options: [{key:"ก",text:"-1"},
             {key:"ข",text:"0"},
             {key:"ค",text:"1"},
-            {key:"ง",text:"2"}], 
+            {key:"ง",text:"2"}],
             answer: "ง" },
             { id: 14,  qText: "ตุลาคมเกิดวัน/เดือนไหน", code: null, options: [{key:"ก",text:"9/9"},
             {key:"ข",text:"10/10"},
             {key:"ค",text:"15/10"},
-            {key:"ง",text:"11/10"}], 
+            {key:"ง",text:"11/10"}],
             answer: "ข" },
             { id: 15,  qText: "เฉลิมศักดิ์ตัดผมทรงไร", code: null, options: [{key:"ก",text:"ทูบล็อค"},
             {key:"ข",text:"รองทรง"},
             {key:"ค",text:"กระลาครอบ"},
-            {key:"ง",text:"แสกกลาง"}], 
+            {key:"ง",text:"แสกกลาง"}],
             answer: "ค" },
         ];
 
@@ -487,6 +506,12 @@
         let examTimer = null;
         let timeRemaining = 9999;
         const SCORES_KEY = 'studentScores';
+
+        // Keeps track of the record currently open in the review modal.
+        // Only the student's OWN just-submitted result (this session) and the
+        // Admin dashboard can open the per-question review; the public UID
+        // lookup on the homepage intentionally only ever shows the total score.
+        let lastSubmittedRecord = null;
 
         // Initialize App
         window.onload = function() {
@@ -760,10 +785,14 @@
                 }
             });
 
+            // Store a snapshot of every answer the student picked (by question id)
+            // alongside the score, so the "view answer detail" review works later
+            // both right after submission and via UID lookup / admin dashboard.
             const scoreRecord = {
                 uid: studentInfo.uid,
                 name: studentInfo.name,
                 total: totalScore,
+                answers: { ...userAnswers },
                 submittedAt: new Date().toLocaleString('th-TH')
             };
 
@@ -776,6 +805,7 @@
             }
 
             await saveScores(localRecords);
+            lastSubmittedRecord = scoreRecord;
 
             document.getElementById('result-total-score').textContent = totalScore;
             document.getElementById('result-user-summary').innerHTML = `
@@ -834,6 +864,85 @@
             }
         }
 
+        // ------------------ ANSWER REVIEW MODAL (shared by result page / admin) ------------------
+        // Public UID lookup deliberately does NOT open this — it only ever
+        // shows the total score. Per-question detail is available to the
+        // student only right after they submit (their own current session),
+        // and to the teacher via the Admin dashboard.
+        function openReviewFromResult() {
+            if (lastSubmittedRecord) {
+                openReviewModal(lastSubmittedRecord);
+            }
+        }
+
+        function openReviewModal(record) {
+            const modal = document.getElementById('review-modal');
+            const body = document.getElementById('review-modal-body');
+            const subtitle = document.getElementById('review-modal-subtitle');
+
+            subtitle.textContent = `${record.name} · User ID: ${record.uid} · คะแนน ${record.total}/15`;
+            body.innerHTML = '';
+
+            const answers = record.answers || {};
+
+            EXAM_QUESTIONS.forEach(q => {
+                const userAns = answers[q.id];
+                const isCorrect = userAns === q.answer;
+                const wasAnswered = userAns !== undefined;
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border-2 ${
+                    !wasAnswered ? 'border-slate-200 bg-slate-50' :
+                    isCorrect ? 'border-emerald-200 bg-emerald-50/60' : 'border-rose-200 bg-rose-50/60'
+                }`;
+
+                const optionRows = q.options.map(opt => {
+                    const isUserChoice = opt.key === userAns;
+                    const isCorrectChoice = opt.key === q.answer;
+                    let rowClass = "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm";
+                    if (isCorrectChoice) {
+                        rowClass += " bg-emerald-100 text-emerald-800 font-semibold";
+                    } else if (isUserChoice && !isCorrectChoice) {
+                        rowClass += " bg-rose-100 text-rose-800 font-semibold";
+                    } else {
+                        rowClass += " text-slate-500";
+                    }
+                    let iconHtml = '';
+                    if (isCorrectChoice) {
+                        iconHtml = '<i class="fa-solid fa-check text-emerald-600"></i>';
+                    } else if (isUserChoice) {
+                        iconHtml = '<i class="fa-solid fa-xmark text-rose-600"></i>';
+                    } else {
+                        iconHtml = '<span class="w-3.5"></span>';
+                    }
+                    return `<div class="${rowClass}">${iconHtml}<span>${opt.key}. ${opt.text}</span></div>`;
+                }).join('');
+
+                const statusBadge = !wasAnswered
+                    ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-200 text-slate-600">ไม่ได้ตอบ</span>`
+                    : isCorrect
+                        ? `<span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500 text-white">ถูกต้อง</span>`
+                        : `<span class="px-2 py-0.5 rounded text-xs font-bold bg-rose-500 text-white">ไม่ถูกต้อง</span>`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-3 mb-2.5">
+                        <p class="font-bold text-slate-800 text-sm">ข้อ ${q.id}. ${q.qText}</p>
+                        ${statusBadge}
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        ${optionRows}
+                    </div>
+                `;
+                body.appendChild(card);
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('review-modal').classList.add('hidden');
+        }
+
         // ------------------ TEACHER ADMIN DASHBOARD ------------------
         function openAdminModal() {
             document.getElementById('admin-auth-modal').classList.remove('hidden');
@@ -846,9 +955,6 @@
             document.getElementById('admin-passcode-input').value = '';
         }
 
-        // FIX: the modal told users the password was "1234" but the code checked
-        // for a completely different string ("kamon"), so nobody could ever log
-        // in using the password shown on screen. The check now matches the hint.
         function submitAdminAuth() {
             const pw = document.getElementById('admin-passcode-input').value;
             if (pw === '1122') {
@@ -894,7 +1000,12 @@
             document.getElementById('admin-stat-max').textContent = `${maxScore} คะแนน`;
         }
 
+        // Keeps the currently loaded admin records around so a click on
+        // "ดูคำตอบ" can locate the right record by uid without re-fetching.
+        let adminCachedRecords = [];
+
         function renderAdminTable(records) {
+            adminCachedRecords = records;
             const sorted = records.slice().sort((a, b) => b.total - a.total);
 
             const tbody = document.getElementById('admin-table-rows');
@@ -925,9 +1036,21 @@
                         </span>
                     </td>
                     <td class="py-3 px-4 text-center text-xs text-slate-400 font-medium">${student.submittedAt}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="openReviewFromAdmin('${student.uid}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 mx-auto border border-indigo-100">
+                            <i class="fa-solid fa-eye"></i> ดูคำตอบ
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        function openReviewFromAdmin(uid) {
+            const record = adminCachedRecords.find(r => r.uid === uid);
+            if (record) {
+                openReviewModal(record);
+            }
         }
 
         // ------------------ EXPORT DATA TO EXCEL (CSV) ------------------
@@ -976,7 +1099,14 @@
                 const namePrefix = Math.random() > 0.5 ? "เด็กชาย" : "เด็กหญิง";
                 const fullName = `${namePrefix}${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
 
-                const total = Math.floor(Math.random() * 15) + 1;
+                // Generate a plausible mock answer sheet so "ดูคำตอบ" also works
+                // for the randomly-injected demo students, not just real submissions.
+                const mockAnswers = {};
+                EXAM_QUESTIONS.forEach(q => {
+                    const keys = q.options.map(o => o.key);
+                    mockAnswers[q.id] = keys[Math.floor(Math.random() * keys.length)];
+                });
+                const total = EXAM_QUESTIONS.reduce((sum, q) => sum + (mockAnswers[q.id] === q.answer ? 1 : 0), 0);
 
                 const submitTime = new Date(Date.now() - Math.random() * 36000000).toLocaleString('th-TH');
 
@@ -984,6 +1114,7 @@
                     uid,
                     name: fullName,
                     total,
+                    answers: mockAnswers,
                     submittedAt: submitTime
                 });
             }
