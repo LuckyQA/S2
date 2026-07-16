@@ -1,424 +1,29 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S2</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Prompt', 'Sarabun', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .page-fade { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 min-h-screen font-sans flex flex-col justify-between">
+<script type="module">
+        // ------------------ FIREBASE SETUP (Firestore as the data store) ------------------
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getFirestore, collection, doc, getDoc, getDocs, runTransaction, writeBatch
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <!-- Header Navigation -->
-    <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-white text-indigo-700 p-2.5 rounded-lg shadow-inner flex items-center justify-center">
-                    <i class="fa-solid fa-microchip text-2xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-wide">ข้อสอบสเมิร์ฟทู</h1>
-                    <p class="text-xs text-indigo-200">แบบทดสอบ 15 ข้อ</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="switchScreen('home')" class="bg-white/10 hover:bg-white/20 transition px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                    <i class="fa-solid fa-house"></i> หน้าแรก
-                </button>
-                <button onclick="openAdminModal()" class="bg-yellow-500 hover:bg-yellow-600 text-slate-950 transition px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-user-tie"></i> แดชบอร์ด Admin
-                </button>
-            </div>
-        </div>
-    </header>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBVIR_170wrfJsQOPB2lz3VYm8pxf98qc",
+            authDomain: "smurf2exam.firebaseapp.com",
+            projectId: "smurf2exam",
+            storageBucket: "smurf2exam.firebasestorage.app",
+            messagingSenderId: "908252045634",
+            appId: "1:908252045634:web:af7c3bd0093a754ae5a8db"
+        };
 
-    <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+        const firebaseApp = initializeApp(firebaseConfig);
+        const db = getFirestore(firebaseApp);
 
-        <!-- ==================== SCREEN 1: HOME PAGE ==================== -->
-        <section id="screen-home" class="page-fade space-y-8 py-4">
-            <!-- Hero Banner -->
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12 gap-0 border border-slate-100">
-                <div class="p-8 md:p-12 md:col-span-7 flex flex-col justify-center space-y-6">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 self-start">
-                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> ข้อสอบประเมินผล
-                    </span>
-                    <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight">
-                        ระบบทำข้อสอบและรายงานผลสอบ
-                    </h2>
-                    <p class="text-slate-600 text-lg leading-relaxed">
-                        แบบทดสอบ 15 ข้อ
-                    </p>
-                    <div class="flex flex-wrap gap-4 pt-2">
-                        <div class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl">
-                            <i class="fa-solid fa-list-check text-indigo-600"></i>
-                            <span>ข้อสอบ 15 ข้อ</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl">
-                            <i class="fa-solid fa-clock text-indigo-600"></i>
-                            <span id="hero-time-label">เวลาทำสอบ 166 นาที</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="md:col-span-5 bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-100 p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-100">
-                    <div class="rounded-2xl shadow-lg border-4 border-white w-full h-48 md:h-64 bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
-                        <div class="grid grid-cols-2 gap-4 text-white/90">
-                            <i class="fa-solid fa-list-check text-5xl"></i>
-                            <i class="fa-solid fa-square-poll-vertical text-5xl"></i>
-                            <i class="fa-solid fa-graduation-cap text-5xl"></i>
-                            <i class="fa-solid fa-clipboard-check text-5xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        // Every student's result is one Firestore document, and the document ID
+        // IS the student's UID. That's what makes UID uniqueness possible:
+        // Firestore document IDs are unique by definition, so two students can
+        // never silently share one record, and a duplicate submission attempt
+        // can be caught deterministically (see submitQuizAnswers below).
+        const SCORES_COLLECTION = 'examScores';
 
-            <!-- Action Panels: Registration and Lookup -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <!-- Registration to Take Quiz (Left Panel) -->
-                <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 border border-slate-100 lg:col-span-7 space-y-6">
-                    <div class="border-b border-slate-100 pb-4">
-                        <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <i class="fa-solid fa-user-pen text-indigo-600"></i> ข้อมูลผู้เข้าทดสอบ
-                        </h3>
-                        <p class="text-sm text-slate-500">กรุณากรอกข้อมูลส่วนบุคคลที่ถูกต้องเพื่อบันทึกผลสอบเข้าสู่ระบบ</p>
-                    </div>
-
-                    <form id="form-register" onsubmit="startQuiz(event)" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1.5">User ID (รหัสผู้ใช้งานสำหรับดูคะแนน) *</label>
-                            <input type="text" id="reg-uid" required placeholder="ตัวอย่าง: UID82101" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1.5">ชื่อ *</label>
-                            <input type="text" id="reg-name" required placeholder="กมล" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none">
-                        </div>
-
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 text-lg">
-                            <i class="fa-solid fa-play-circle"></i> เริ่มทำข้อสอบของท่าน
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Score Lookup Section (Right Panel) -->
-                <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl shadow-lg p-6 md:p-8 lg:col-span-5 flex flex-col justify-between space-y-6">
-                    <div>
-                        <h3 class="text-xl font-bold flex items-center gap-2">
-                            <i class="fa-solid fa-magnifying-glass text-indigo-300"></i> ตรวจสอบผลสอบรายบุคคล
-                        </h3>
-                        <p class="text-indigo-200 text-sm mt-1">ใส่ User ID ของท่านเพื่อค้นหาผลคะแนนที่สอบไปแล้ว</p>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-1.5">ป้อน User ID ของท่าน</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                                    <i class="fa-solid fa-key"></i>
-                                </span>
-                                <input type="text" id="lookup-uid" placeholder="เช่น UID82101" class="w-full bg-white/10 border border-white/20 focus:bg-white/15 focus:border-indigo-400 transition rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 outline-none">
-                            </div>
-                        </div>
-                        <button onclick="lookupUserScore()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-bold py-3.5 rounded-xl transition shadow-md flex items-center justify-center gap-2">
-                            ค้นหาผลคะแนนสอบ <i class="fa-solid fa-circle-arrow-right"></i>
-                        </button>
-                    </div>
-
-                    <!-- Result output area (hidden initially) -->
-                    <div id="lookup-result-box" class="hidden bg-white/10 p-4 rounded-xl border border-white/10 space-y-2 text-sm">
-                        <div class="flex justify-between border-b border-white/10 pb-1.5">
-                            <span class="text-indigo-300">ชื่อนักเรียน:</span>
-                            <span id="lookup-name" class="font-bold"></span>
-                        </div>
-                        <div class="flex justify-between items-center pt-1.5">
-                            <span class="text-indigo-300">คะแนนที่ได้:</span>
-                            <div class="flex items-center gap-2">
-                                <span id="lookup-score" class="font-bold text-lg text-emerald-400">0/15</span>
-                                <span id="lookup-badge" class="px-2 py-0.5 rounded text-xs font-bold">ผ่าน</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== SCREEN 2: ACTIVE QUIZ ==================== -->
-        <section id="screen-quiz" class="hidden page-fade space-y-6">
-            <!-- Fixed Info Bar & Timer -->
-            <div class="bg-white rounded-2xl shadow-md p-4 flex flex-col md:flex-row justify-between items-center gap-4 border border-slate-100">
-                <div class="flex flex-wrap items-center gap-4 text-sm">
-                    <div class="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-xl font-bold">
-                        <i class="fa-solid fa-user"></i> <span id="quiz-student-info">เด็กหญิงสิรินธร</span>
-                    </div>
-                    <div class="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-xl font-bold">
-                        User ID: <span id="quiz-student-uid" class="font-mono">UID82101</span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-1.5 text-rose-600 font-bold text-lg bg-rose-50 px-4 py-2 rounded-xl animate-pulse">
-                        <i class="fa-solid fa-hourglass-half"></i>
-                        <span id="quiz-timer">00:00</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quiz Layout: Navigation (Sidebar) + Question Container -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <!-- Question Navigation Sidebar -->
-                <div class="lg:col-span-3 bg-white rounded-2xl p-4 shadow-md border border-slate-100 space-y-4">
-                    <h4 class="font-bold text-slate-800 text-sm border-b border-slate-100 pb-2">แผนผังคำถาม (15 ข้อ)</h4>
-                    <div class="grid grid-cols-5 gap-1.5" id="nav-btn-grid">
-                        <!-- Generated dynamically -->
-                    </div>
-
-                    <div class="pt-2">
-                        <button onclick="confirmSubmitQuiz()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> ส่งคำตอบตรวจผลสอบ
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Active Question Details -->
-                <div class="lg:col-span-9 space-y-6">
-                    <div class="bg-white rounded-2xl shadow-md p-6 md:p-8 border border-slate-100">
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
-                            <div>
-                                <h3 id="quiz-q-num" class="text-xl font-bold text-slate-800 mt-1.5">คำถามข้อที่ 1</h3>
-                            </div>
-                            <span class="text-xs font-bold text-slate-400">ข้อละ 1 คะแนน</span>
-                        </div>
-
-                        <!-- Question Text / Code Box -->
-                        <div class="space-y-6">
-                            <p id="quiz-q-text" class="text-lg text-slate-900 font-semibold leading-relaxed"></p>
-
-                            <!-- Embedded Code Snippet / Context Box (Conditionally updated via JS) -->
-                            <div id="quiz-code-box" class="hidden bg-slate-900 text-slate-100 p-4 rounded-xl font-mono text-sm shadow-inner relative overflow-x-auto">
-                                <div class="absolute right-3 top-3 bg-white/10 text-xs text-white/50 px-2 py-0.5 rounded uppercase">Code</div>
-                                <pre id="quiz-code-content" class="whitespace-pre"></pre>
-                            </div>
-
-                            <!-- Options Grid -->
-                            <div id="quiz-options" class="grid grid-cols-1 gap-3.5">
-                                <!-- Generated Dynamically -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Navigation Action Buttons -->
-                    <div class="flex justify-between items-center gap-4">
-                        <button onclick="prevQuestion()" id="btn-prev-q" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold px-6 py-3.5 rounded-xl transition shadow-sm flex items-center gap-2">
-                            <i class="fa-solid fa-arrow-left"></i> ย้อนกลับ
-                        </button>
-                        <button onclick="nextQuestion()" id="btn-next-q" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-xl transition shadow flex items-center gap-2 ml-auto">
-                            ข้อถัดไป <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== SCREEN 3: RESULTS SUMMARY ==================== -->
-        <section id="screen-result" class="hidden page-fade space-y-8">
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 text-center p-8 md:p-12 space-y-6">
-                <!-- Visual score indicator -->
-                <div class="mx-auto w-36 h-36 md:w-44 md:h-44 rounded-full border-8 flex flex-col items-center justify-center shadow-lg" id="score-ring-color">
-                    <span id="result-total-score" class="text-4xl md:text-5xl font-black text-slate-800">0</span>
-                    <span class="text-slate-400 font-bold border-t border-slate-200 pt-0.5 mt-1 text-xs md:text-sm uppercase tracking-widest">เต็ม 15 คะแนน</span>
-                </div>
-
-                <div class="max-w-xl mx-auto space-y-3">
-                    <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900">
-                        ยินดีด้วย! ท่านทำแบบทดสอบเสร็จเรียบร้อยแล้ว
-                    </h2>
-                    <p id="result-user-summary" class="text-slate-600">
-                        ผลการทดสอบของท่านได้รับการบันทึกเรียบร้อยแล้ว
-                    </p>
-                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold" id="result-pass-badge">
-                        <i class="fa-solid fa-circle-check"></i> ผ่านเกณฑ์การทดสอบ
-                    </div>
-                </div>
-
-                <div class="pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button onclick="openReviewFromResult()" class="bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-bold px-8 py-3.5 rounded-xl transition flex items-center gap-2">
-                        <i class="fa-solid fa-list-check"></i> ดูรายละเอียดคำตอบรายข้อ
-                    </button>
-                    <button onclick="backToHome()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-xl transition shadow-lg">
-                        กลับสู่หน้าหลักระบบ
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==================== SCREEN 4: TEACHER DASHBOARD ==================== -->
-        <section id="screen-admin" class="hidden page-fade space-y-6">
-            <!-- Admin Top Bar -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-nodes text-indigo-600"></i> แดชบอร์ดวิเคราะห์ผลคะแนนสอบ
-                    </h2>
-                    <p class="text-slate-500 text-sm">ตรวจสอบคะแนน ดูคำตอบรายข้อของนักเรียนแต่ละคน และดาวน์โหลดออกเป็นไฟล์ Excel</p>
-                </div>
-                <!-- Action Tools -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="injectMockData()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-3.5 py-2 rounded-lg text-xs transition flex items-center gap-1">
-                        <i class="fa-solid fa-flask"></i> จำลองคะแนนทดสอบ
-                    </button>
-                    <button onclick="clearAllScores()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3.5 py-2 rounded-lg text-xs transition flex items-center gap-1 border border-rose-200">
-                        <i class="fa-solid fa-trash-can"></i> ล้างข้อมูลผลสอบทั้งหมด
-                    </button>
-                    <button onclick="switchScreen('home')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1 shadow-sm">
-                        <i class="fa-solid fa-circle-arrow-left"></i> ออกจากระบบหลังบ้าน
-                    </button>
-                </div>
-            </div>
-
-            <!-- Global statistics summary widgets -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-indigo-50 text-indigo-600 p-3.5 rounded-xl"><i class="fa-solid fa-users text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">นักเรียนเข้าสอบทั้งหมด</span>
-                        <span id="admin-stat-total" class="text-2xl font-bold text-slate-900">0 คน</span>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-xl"><i class="fa-solid fa-square-poll-vertical text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">คะแนนเฉลี่ย</span>
-                        <span id="admin-stat-avg" class="text-2xl font-bold text-slate-900">0.0 คะแนน</span>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-teal-50 text-teal-600 p-3.5 rounded-xl"><i class="fa-solid fa-circle-check text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">อัตราการสอบผ่าน</span>
-                        <span id="admin-stat-pass-rate" class="text-2xl font-bold text-slate-900">0%</span>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div class="bg-yellow-50 text-yellow-600 p-3.5 rounded-xl"><i class="fa-solid fa-bolt-lightning text-2xl"></i></div>
-                    <div>
-                        <span class="text-xs text-slate-400 font-semibold uppercase block">คะแนนสูงสุด</span>
-                        <span id="admin-stat-max" class="text-2xl font-bold text-slate-900">0 คะแนน</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Result table -->
-            <div class="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex justify-between items-center">
-                    <span id="admin-loading-indicator" class="hidden text-xs text-slate-400 font-semibold flex items-center gap-2">
-                        <i class="fa-solid fa-circle-notch spin"></i> กำลังโหลดข้อมูล...
-                    </span>
-                    <span></span>
-                    <button id="btn-export-excel" onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-file-excel"></i> ส่งออกเป็น Excel (CSV)
-                    </button>
-                </div>
-
-                <div class="p-6 overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="border-b border-slate-200 text-slate-400 uppercase text-xs font-bold bg-slate-50/50">
-                                <th class="py-3.5 px-4 text-center">User ID</th>
-                                <th class="py-3.5 px-4">ชื่อ</th>
-                                <th class="py-3.5 px-4 text-center">คะแนนรวม (15)</th>
-                                <th class="py-3.5 px-4 text-center">ผลการประเมิน</th>
-                                <th class="py-3.5 px-4 text-center">วันเวลาทำข้อสอบ</th>
-                                <th class="py-3.5 px-4 text-center">คำตอบรายข้อ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-table-rows" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Dynamic Content -->
-                        </tbody>
-                    </table>
-
-                    <!-- Table empty state -->
-                    <div id="admin-empty-state" class="hidden py-12 text-center space-y-3">
-                        <div class="text-slate-300"><i class="fa-solid fa-folder-open text-5xl"></i></div>
-                        <p class="text-slate-500 font-semibold">ยังไม่มีผู้สอบส่งคำตอบ</p>
-                        <p class="text-xs text-slate-400">กดปุ่ม "จำลองคะแนนทดสอบ" เพื่อสุ่มข้อมูลเพื่อการสาธิตรายงาน</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer block -->
-    <footer class="bg-slate-100 border-t border-slate-200 text-slate-500 py-6 text-center text-sm">
-        <div class="max-w-7xl mx-auto px-4 space-y-2">
-            <p>© 2026 ระบบประเมินผลออนไลน์</p>
-        </div>
-    </footer>
-
-    <!-- ==================== ADMIN PASSWORD MODAL ==================== -->
-    <div id="admin-auth-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-100 page-fade">
-            <div class="p-5 bg-gradient-to-r from-indigo-700 to-indigo-800 text-white flex justify-between items-center">
-                <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-lock"></i> ป้อนรหัสผ่านหลังบ้าน</h3>
-                <button onclick="closeAdminModal()" class="text-white/60 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-6 space-y-4">
-                <p class="text-slate-500 text-xs">ระบุรหัสผ่านสำหรับการดูคะแนนรวมและส่งออก Excel (รหัสเริ่มต้นของระบบคือ <strong class="text-indigo-600">1122</strong>)</p>
-                <div>
-                    <input type="password" id="admin-passcode-input" placeholder="ป้อนรหัสผ่าน..." class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition outline-none text-center font-mono">
-                    <p id="admin-auth-error" class="hidden text-rose-500 text-xs mt-1.5 text-center font-semibold">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</p>
-                </div>
-                <button onclick="submitAdminAuth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition">
-                    เข้าสู่ระบบตรวจสอบ
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ==================== ANSWER REVIEW MODAL (per-question breakdown) ==================== -->
-    <div id="review-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-slate-100 page-fade flex flex-col">
-            <div class="p-5 bg-gradient-to-r from-indigo-700 to-indigo-800 text-white flex justify-between items-center shrink-0">
-                <div>
-                    <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-list-check"></i> รายละเอียดคำตอบรายข้อ</h3>
-                    <p id="review-modal-subtitle" class="text-xs text-indigo-200 mt-0.5"></p>
-                </div>
-                <button onclick="closeReviewModal()" class="text-white/60 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div id="review-modal-body" class="p-5 space-y-3 overflow-y-auto">
-                <!-- Generated dynamically -->
-            </div>
-        </div>
-    </div>
-
-
-    <!-- ==================== LOGIC AND STATE MANAGEMENT JAVASCRIPT ==================== -->
-    <script>
         // ------------------ EXAM DATABASE (15 Questions) ------------------
         const EXAM_QUESTIONS = [
             { id: 1,  qText: "ไฝที่ปากของกีรติอยู่ที่ไหน", code: null, options: [{key:"ก",text:"หน้าผาก"},
@@ -505,7 +110,6 @@
         let studentInfo = { uid: '', name: '' };
         let examTimer = null;
         let timeRemaining = 9999;
-        const SCORES_KEY = 'studentScores';
 
         // Keeps track of the record currently open in the review modal.
         // Only the student's OWN just-submitted result (this session) and the
@@ -516,63 +120,21 @@
         // Initialize App
         window.onload = function() {
             buildNavGrid();
-            checkStorageAvailability();
             switchScreen('home');
         };
 
-        // ------------------ PERSISTENT STORAGE HELPERS ------------------
-        // Scores are stored as SHARED data so every student's submission and the
-        // teacher's admin dashboard see the same, single, persistent scoreboard.
-        //
-        // IMPORTANT: window.storage only exists when this page is opened inside
-        // Claude's live artifact preview (the panel Claude renders in chat).
-        // If this .html file is downloaded and double-clicked, or hosted on a
-        // plain web server, window.storage will be undefined and nothing will
-        // save anywhere — that's the #1 reason "nothing shows up in the
-        // dashboard." checkStorageAvailability() below warns about this loudly
-        // instead of failing silently.
-        function checkStorageAvailability() {
-            if (typeof window.storage === 'undefined') {
-                const banner = document.createElement('div');
-                banner.className = "bg-rose-600 text-white text-sm font-semibold text-center py-2.5 px-4";
-                banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>
-                    ไม่พบระบบจัดเก็บข้อมูล (window.storage) — หน้านี้ต้องเปิดผ่าน Claude artifact เท่านั้น
-                    ถ้าเปิดไฟล์ .html ที่ดาวน์โหลดมาโดยตรง หรือนำไปฝากไว้ที่เว็บอื่น ผลสอบจะไม่ถูกบันทึกและ Admin จะไม่เห็นข้อมูลใคร`;
-                document.body.insertBefore(banner, document.body.firstChild);
-            }
+        // ------------------ FIRESTORE DATA HELPERS ------------------
+        async function getAllRecords() {
+            const snap = await getDocs(collection(db, SCORES_COLLECTION));
+            const records = [];
+            snap.forEach(d => records.push({ uid: d.id, ...d.data() }));
+            return records;
         }
 
-        async function getScores() {
-            if (typeof window.storage === 'undefined') {
-                console.error('window.storage is not available in this environment.');
-                return [];
-            }
-            try {
-                const result = await window.storage.get(SCORES_KEY, true);
-                return result && result.value ? JSON.parse(result.value) : [];
-            } catch (e) {
-                // Key not found yet, or a transient error — treat as empty list.
-                return [];
-            }
-        }
-
-        async function saveScores(records) {
-            if (typeof window.storage === 'undefined') {
-                alert("ไม่สามารถบันทึกข้อมูลได้: ไม่พบระบบจัดเก็บข้อมูล (window.storage)\nกรุณาเปิดหน้านี้ผ่าน Claude artifact โดยตรง ไม่ใช่ไฟล์ที่ดาวน์โหลดมา");
-                return false;
-            }
-            try {
-                const result = await window.storage.set(SCORES_KEY, JSON.stringify(records), true);
-                if (!result) {
-                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
-                    return false;
-                }
-                return true;
-            } catch (e) {
-                console.error('Storage error:', e);
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + (e && e.message ? e.message : e));
-                return false;
-            }
+        async function getRecordByUid(uid) {
+            const ref = doc(db, SCORES_COLLECTION, uid);
+            const snap = await getDoc(ref);
+            return snap.exists() ? { uid: snap.id, ...snap.data() } : null;
         }
 
         // Build the 1-15 navigation button grid
@@ -607,16 +169,45 @@
         }
 
         // ------------------ QUIZ INTAKE / START ------------------
-        function startQuiz(event) {
+        async function startQuiz(event) {
             event.preventDefault();
 
-            studentInfo.uid = document.getElementById('reg-uid').value.trim().toUpperCase();
-            studentInfo.name = document.getElementById('reg-name').value.trim();
+            const uid = document.getElementById('reg-uid').value.trim().toUpperCase();
+            const name = document.getElementById('reg-name').value.trim();
 
-            if (!studentInfo.uid || !studentInfo.name) {
+            if (!uid || !name) {
                 alert("กรุณากรอกข้อมูลให้ครบถ้วนก่อนเข้าห้องสอบ");
                 return;
             }
+
+            // UID uniqueness check: if this UID has already submitted a result,
+            // block starting the exam again under the same ID.
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch spin"></i> กำลังตรวจสอบ User ID...`;
+
+            let existing;
+            try {
+                existing = await getRecordByUid(uid);
+            } catch (e) {
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล กรุณาลองใหม่อีกครั้ง\n" + (e && e.message ? e.message : e));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+                return;
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
+
+            if (existing) {
+                alert(`User ID "${uid}" นี้ได้ทำข้อสอบและถูกบันทึกผลไปแล้วก่อนหน้านี้\nแต่ละ User ID สามารถทำข้อสอบได้เพียงครั้งเดียวเท่านั้น\nหากคิดว่าเป็นข้อผิดพลาด กรุณาติดต่อครูผู้คุมสอบ`);
+                return;
+            }
+
+            studentInfo.uid = uid;
+            studentInfo.name = name;
 
             userAnswers = {};
             currentQuestionIndex = 0;
@@ -738,11 +329,6 @@
             }
         }
 
-        // FIX: the previous version used className.replace() with a shared regex,
-        // which re-appended the replacement text once per matched class name and
-        // corrupted the button's className after a few clicks. Now we just
-        // rebuild the className from scratch every time, which is simpler and
-        // always correct regardless of how many times it runs.
         function updateQuestionMapHighlight() {
             for (let i = 1; i <= EXAM_QUESTIONS.length; i++) {
                 const btn = document.getElementById(`nav-btn-${i}`);
@@ -785,9 +371,6 @@
                 }
             });
 
-            // Store a snapshot of every answer the student picked (by question id)
-            // alongside the score, so the "view answer detail" review works later
-            // both right after submission and via UID lookup / admin dashboard.
             const scoreRecord = {
                 uid: studentInfo.uid,
                 name: studentInfo.name,
@@ -796,15 +379,32 @@
                 submittedAt: new Date().toLocaleString('th-TH')
             };
 
-            const localRecords = await getScores();
-            const existingIdx = localRecords.findIndex(r => r.uid === scoreRecord.uid);
-            if (existingIdx !== -1) {
-                localRecords[existingIdx] = scoreRecord;
-            } else {
-                localRecords.push(scoreRecord);
+            // Write the result inside a Firestore transaction: read the doc, and
+            // ONLY create it if it doesn't already exist. This makes the UID
+            // uniqueness rule airtight even if two tabs/devices raced past the
+            // earlier check in startQuiz() at nearly the same moment — Firestore
+            // guarantees the transaction that reads "not exists" wins the write,
+            // and the other one is rejected.
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const ref = doc(db, SCORES_COLLECTION, studentInfo.uid);
+                    const snap = await transaction.get(ref);
+                    if (snap.exists()) {
+                        throw new Error('DUPLICATE_UID');
+                    }
+                    transaction.set(ref, scoreRecord);
+                });
+            } catch (e) {
+                if (e && e.message === 'DUPLICATE_UID') {
+                    alert(`User ID "${studentInfo.uid}" นี้มีผลสอบถูกบันทึกไปแล้ว ไม่สามารถส่งคำตอบซ้ำได้\nกรุณาติดต่อครูผู้คุมสอบหากคิดว่าเป็นข้อผิดพลาด`);
+                    switchScreen('home');
+                    return;
+                }
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการบันทึกคะแนนลง Firebase กรุณาลองใหม่อีกครั้ง\n" + (e && e.message ? e.message : e));
+                return;
             }
 
-            await saveScores(localRecords);
             lastSubmittedRecord = scoreRecord;
 
             document.getElementById('result-total-score').textContent = totalScore;
@@ -841,8 +441,15 @@
                 return;
             }
 
-            const records = await getScores();
-            const result = records.find(r => r.uid === searchUid);
+            let result;
+            try {
+                result = await getRecordByUid(searchUid);
+            } catch (e) {
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล กรุณาลองใหม่อีกครั้ง");
+                return;
+            }
+
             const box = document.getElementById('lookup-result-box');
 
             if (result) {
@@ -969,7 +576,13 @@
         async function loadAdminDashboard() {
             const indicator = document.getElementById('admin-loading-indicator');
             indicator.classList.remove('hidden');
-            const records = await getScores();
+            let records = [];
+            try {
+                records = await getAllRecords();
+            } catch (e) {
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Firebase: " + (e && e.message ? e.message : e));
+            }
             renderAdminStats(records);
             renderAdminTable(records);
             indicator.classList.add('hidden');
@@ -1055,7 +668,15 @@
 
         // ------------------ EXPORT DATA TO EXCEL (CSV) ------------------
         async function exportToExcel() {
-            const records = (await getScores()).slice().sort((a, b) => b.total - a.total);
+            let records = [];
+            try {
+                records = await getAllRecords();
+            } catch (e) {
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Firebase: " + (e && e.message ? e.message : e));
+                return;
+            }
+            records.sort((a, b) => b.total - a.total);
 
             if (records.length === 0) {
                 alert(`ยังไม่มีข้อมูลผลการสอบสำหรับออกรายงาน Excel`);
@@ -1067,7 +688,6 @@
 
             records.forEach(student => {
                 const statusText = student.total >= 10 ? "ผ่าน" : "ปรับปรุง";
-                // Escape any embedded quotes in free-text fields so the CSV stays valid.
                 const safeName = String(student.name).replace(/"/g, '""');
                 csvContent += `${student.uid},"${safeName}",${student.total},${statusText},${student.submittedAt}\n`;
             });
@@ -1088,13 +708,25 @@
             const firstNames = ["กิตติภพ", "จิรพัฒน์", "ชยุตม์", "ธนพัตน์", "ปกรณ์เกียรติ", "รัชพล", "พีรพล", "ชลสิทธิ์", "ณัฐพงษ์", "มนัสวี", "วรัญญา", "ชลดา", "ทิพยวรรณ", "ขวัญจิรา", "กัญญารัตน์", "พิมพิกา"];
             const lastNames = ["สมบูรณ์", "ดีเลิศ", "แสนดี", "วงศ์ษา", "รุ่งเรือง", "ชื่นชม", "มณีรนิต", "แสงทอง", "สุขใจ", "บุญธรรม", "แก้วงาม", "นามดี", "ยอดรัก", "ทรงเดช", "ศรีบุญ", "เกิดผล"];
 
-            let currentRecords = await getScores();
+            let existingRecords;
+            try {
+                existingRecords = await getAllRecords();
+            } catch (e) {
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase: " + (e && e.message ? e.message : e));
+                return;
+            }
+            const existingUids = new Set(existingRecords.map(r => r.uid));
+
+            const batch = writeBatch(db);
+            let addedCount = 0;
 
             for (let i = 0; i < 15; i++) {
                 const uidNum = Math.floor(Math.random() * 9000) + 1000;
                 const uid = `UID${uidNum}`;
 
-                if (currentRecords.some(r => r.uid === uid)) continue;
+                if (existingUids.has(uid)) continue;
+                existingUids.add(uid);
 
                 const namePrefix = Math.random() > 0.5 ? "เด็กชาย" : "เด็กหญิง";
                 const fullName = `${namePrefix}${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
@@ -1110,31 +742,62 @@
 
                 const submitTime = new Date(Date.now() - Math.random() * 36000000).toLocaleString('th-TH');
 
-                currentRecords.push({
-                    uid,
-                    name: fullName,
-                    total,
-                    answers: mockAnswers,
-                    submittedAt: submitTime
-                });
+                const ref = doc(db, SCORES_COLLECTION, uid);
+                batch.set(ref, { uid, name: fullName, total, answers: mockAnswers, submittedAt: submitTime });
+                addedCount++;
             }
 
-            const ok = await saveScores(currentRecords);
-            if (ok) {
+            if (addedCount === 0) {
+                alert("สุ่ม User ID ซ้ำกับที่มีอยู่แล้วทั้งหมด ลองกดปุ่มนี้ซ้ำอีกครั้ง");
+                return;
+            }
+
+            try {
+                await batch.commit();
                 await loadAdminDashboard();
                 alert("สุ่มจำลองข้อมูลผู้เข้าสอบ เรียบร้อยแล้ว!");
+            } catch (e) {
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูลจำลอง: " + (e && e.message ? e.message : e));
             }
         }
 
         async function clearAllScores() {
-            if (confirm("คุณแน่ใจว่าต้องการล้างฐานข้อมูลผลสอบของนักเรียนทั้งหมด? (ข้อมูลนี้จะไม่สามารถกู้คืนได้)")) {
-                const ok = await saveScores([]);
-                if (ok) {
-                    await loadAdminDashboard();
-                    alert("ล้างฐานข้อมูลประวัติสอบทั้งหมดสำเร็จ");
-                }
+            if (!confirm("คุณแน่ใจว่าต้องการล้างฐานข้อมูลผลสอบของนักเรียนทั้งหมด? (ข้อมูลนี้จะไม่สามารถกู้คืนได้)")) {
+                return;
+            }
+            try {
+                const snap = await getDocs(collection(db, SCORES_COLLECTION));
+                const batch = writeBatch(db);
+                snap.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                await loadAdminDashboard();
+                alert("ล้างฐานข้อมูลประวัติสอบทั้งหมดสำเร็จ");
+            } catch (e) {
+                console.error('Firestore error:', e);
+                alert("เกิดข้อผิดพลาดในการล้างฐานข้อมูล: " + (e && e.message ? e.message : e));
             }
         }
+
+        // ------------------ EXPOSE FUNCTIONS REFERENCED BY INLINE onclick/onsubmit ------------------
+        // This script runs as a module (needed for the Firebase "import" syntax
+        // above), and module scope is NOT automatically global — so every
+        // function an HTML tag calls via onclick="..." / onsubmit="..." must be
+        // attached to window explicitly, or the browser can't find it.
+        window.switchScreen = switchScreen;
+        window.startQuiz = startQuiz;
+        window.prevQuestion = prevQuestion;
+        window.nextQuestion = nextQuestion;
+        window.confirmSubmitQuiz = confirmSubmitQuiz;
+        window.backToHome = backToHome;
+        window.lookupUserScore = lookupUserScore;
+        window.openReviewFromResult = openReviewFromResult;
+        window.closeReviewModal = closeReviewModal;
+        window.openAdminModal = openAdminModal;
+        window.closeAdminModal = closeAdminModal;
+        window.submitAdminAuth = submitAdminAuth;
+        window.injectMockData = injectMockData;
+        window.clearAllScores = clearAllScores;
+        window.exportToExcel = exportToExcel;
+        window.openReviewFromAdmin = openReviewFromAdmin;
     </script>
-</body>
-</html>
