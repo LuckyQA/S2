@@ -491,13 +491,37 @@
         // Initialize App
         window.onload = function() {
             buildNavGrid();
+            checkStorageAvailability();
             switchScreen('home');
         };
 
         // ------------------ PERSISTENT STORAGE HELPERS ------------------
         // Scores are stored as SHARED data so every student's submission and the
         // teacher's admin dashboard see the same, single, persistent scoreboard.
+        //
+        // IMPORTANT: window.storage only exists when this page is opened inside
+        // Claude's live artifact preview (the panel Claude renders in chat).
+        // If this .html file is downloaded and double-clicked, or hosted on a
+        // plain web server, window.storage will be undefined and nothing will
+        // save anywhere — that's the #1 reason "nothing shows up in the
+        // dashboard." checkStorageAvailability() below warns about this loudly
+        // instead of failing silently.
+        function checkStorageAvailability() {
+            if (typeof window.storage === 'undefined') {
+                const banner = document.createElement('div');
+                banner.className = "bg-rose-600 text-white text-sm font-semibold text-center py-2.5 px-4";
+                banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>
+                    ไม่พบระบบจัดเก็บข้อมูล (window.storage) — หน้านี้ต้องเปิดผ่าน Claude artifact เท่านั้น
+                    ถ้าเปิดไฟล์ .html ที่ดาวน์โหลดมาโดยตรง หรือนำไปฝากไว้ที่เว็บอื่น ผลสอบจะไม่ถูกบันทึกและ Admin จะไม่เห็นข้อมูลใคร`;
+                document.body.insertBefore(banner, document.body.firstChild);
+            }
+        }
+
         async function getScores() {
+            if (typeof window.storage === 'undefined') {
+                console.error('window.storage is not available in this environment.');
+                return [];
+            }
             try {
                 const result = await window.storage.get(SCORES_KEY, true);
                 return result && result.value ? JSON.parse(result.value) : [];
@@ -508,6 +532,10 @@
         }
 
         async function saveScores(records) {
+            if (typeof window.storage === 'undefined') {
+                alert("ไม่สามารถบันทึกข้อมูลได้: ไม่พบระบบจัดเก็บข้อมูล (window.storage)\nกรุณาเปิดหน้านี้ผ่าน Claude artifact โดยตรง ไม่ใช่ไฟล์ที่ดาวน์โหลดมา");
+                return false;
+            }
             try {
                 const result = await window.storage.set(SCORES_KEY, JSON.stringify(records), true);
                 if (!result) {
@@ -517,7 +545,7 @@
                 return true;
             } catch (e) {
                 console.error('Storage error:', e);
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + (e && e.message ? e.message : e));
                 return false;
             }
         }
@@ -823,7 +851,7 @@
         // in using the password shown on screen. The check now matches the hint.
         function submitAdminAuth() {
             const pw = document.getElementById('admin-passcode-input').value;
-            if (pw === '1234') {
+            if (pw === '1122') {
                 closeAdminModal();
                 loadAdminDashboard();
                 switchScreen('admin');
