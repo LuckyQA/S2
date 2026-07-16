@@ -30,6 +30,8 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans flex flex-col justify-between">
@@ -81,12 +83,20 @@
                         </div>
                         <div class="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 px-4 py-2.5 rounded-xl">
                             <i class="fa-solid fa-clock text-indigo-600"></i>
-                            <span>เวลาทำสอบ 9999 วินาที</span>
+                            <span id="hero-time-label">เวลาทำสอบ 166 นาที</span>
                         </div>
                     </div>
                 </div>
+                <!-- Replaced fragile/expiring Discord CDN image with a reliable inline graphic -->
                 <div class="md:col-span-5 bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-100 p-8 flex items-center justify-center border-t md:border-t-0 md:border-l border-slate-100">
-                    <img src="https://cdn.discordapp.com/attachments/1238826831730315286/1526969983819714753/image.png?ex=6a58f51d&is=6a57a39d&hm=f60c0dbd969cbfa0a446f59c0067c930b56acfff4e3e3438796a518270fe880d&" alt="Quiz Concept" class="rounded-2xl shadow-lg border-4 border-white max-w-full h-48 md:h-64 object-cover">
+                    <div class="rounded-2xl shadow-lg border-4 border-white w-full h-48 md:h-64 bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
+                        <div class="grid grid-cols-2 gap-4 text-white/90">
+                            <i class="fa-solid fa-list-check text-5xl"></i>
+                            <i class="fa-solid fa-square-poll-vertical text-5xl"></i>
+                            <i class="fa-solid fa-graduation-cap text-5xl"></i>
+                            <i class="fa-solid fa-clipboard-check text-5xl"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -174,7 +184,7 @@
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-1.5 text-rose-600 font-bold text-lg bg-rose-50 px-4 py-2 rounded-xl animate-pulse">
                         <i class="fa-solid fa-hourglass-half"></i>
-                        <span id="quiz-timer">30:00</span>
+                        <span id="quiz-timer">00:00</span>
                     </div>
                 </div>
             </div>
@@ -240,7 +250,7 @@
             <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 text-center p-8 md:p-12 space-y-6">
                 <!-- Visual score indicator -->
                 <div class="mx-auto w-36 h-36 md:w-44 md:h-44 rounded-full border-8 flex flex-col items-center justify-center shadow-lg" id="score-ring-color">
-                    <span id="result-total-score" class="text-4xl md:text-5xl font-black text-slate-800">18</span>
+                    <span id="result-total-score" class="text-4xl md:text-5xl font-black text-slate-800">0</span>
                     <span class="text-slate-400 font-bold border-t border-slate-200 pt-0.5 mt-1 text-xs md:text-sm uppercase tracking-widest">เต็ม 15 คะแนน</span>
                 </div>
 
@@ -322,7 +332,11 @@
 
             <!-- Result table -->
             <div class="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex justify-end">
+                <div class="bg-slate-50 border-b border-slate-200 px-4 py-3 flex justify-between items-center">
+                    <span id="admin-loading-indicator" class="hidden text-xs text-slate-400 font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-notch spin"></i> กำลังโหลดข้อมูล...
+                    </span>
+                    <span></span>
                     <button id="btn-export-excel" onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
                         <i class="fa-solid fa-file-excel"></i> ส่งออกเป็น Excel (CSV)
                     </button>
@@ -387,9 +401,6 @@
     <!-- ==================== LOGIC AND STATE MANAGEMENT JAVASCRIPT ==================== -->
     <script>
         // ------------------ EXAM DATABASE (15 Questions) ------------------
-        // NOTE: qText / options / code / answer are left BLANK as a template.
-        // Fill in the question text, the 4 options, the correct answer key
-        // ("ก" | "ข" | "ค" | "ง"), and optionally a code snippet for each item.
         const EXAM_QUESTIONS = [
             { id: 1,  qText: "ไฝที่ปากของกีรติอยู่ที่ไหน", code: null, options: [{key:"ก",text:"หน้าผาก"},
             {key:"ข",text:"คาง"},
@@ -470,27 +481,48 @@
 
         // ------------------ GLOBAL APPLICATION STATE ------------------
         let currentScreen = 'home';
-        let currentQuestionIndex = 0; // 0-19 corresponds to Questions 1-20
-        let userAnswers = {}; // { questionId: selectedKey }
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
         let studentInfo = { uid: '', name: '' };
         let examTimer = null;
         let timeRemaining = 9999;
+        const SCORES_KEY = 'studentScores';
 
         // Initialize App
         window.onload = function() {
-            initLocalStorage();
             buildNavGrid();
             switchScreen('home');
         };
 
-        // Initialize storage if not exists
-        function initLocalStorage() {
-            if (!localStorage.getItem('studentScores')) {
-                localStorage.setItem('studentScores', JSON.stringify([]));
+        // ------------------ PERSISTENT STORAGE HELPERS ------------------
+        // Scores are stored as SHARED data so every student's submission and the
+        // teacher's admin dashboard see the same, single, persistent scoreboard.
+        async function getScores() {
+            try {
+                const result = await window.storage.get(SCORES_KEY, true);
+                return result && result.value ? JSON.parse(result.value) : [];
+            } catch (e) {
+                // Key not found yet, or a transient error — treat as empty list.
+                return [];
             }
         }
 
-        // Build the 1-20 navigation button grid
+        async function saveScores(records) {
+            try {
+                const result = await window.storage.set(SCORES_KEY, JSON.stringify(records), true);
+                if (!result) {
+                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.error('Storage error:', e);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง");
+                return false;
+            }
+        }
+
+        // Build the 1-15 navigation button grid
         function buildNavGrid() {
             const grid = document.getElementById('nav-btn-grid');
             grid.innerHTML = '';
@@ -653,23 +685,25 @@
             }
         }
 
+        // FIX: the previous version used className.replace() with a shared regex,
+        // which re-appended the replacement text once per matched class name and
+        // corrupted the button's className after a few clicks. Now we just
+        // rebuild the className from scratch every time, which is simpler and
+        // always correct regardless of how many times it runs.
         function updateQuestionMapHighlight() {
             for (let i = 1; i <= EXAM_QUESTIONS.length; i++) {
                 const btn = document.getElementById(`nav-btn-${i}`);
                 const isSelected = userAnswers[i] !== undefined;
                 const isActive = (i - 1) === currentQuestionIndex;
 
+                let classes = "h-9 rounded-lg font-semibold text-sm transition border flex items-center justify-center";
+                classes += isSelected
+                    ? " bg-indigo-600 border-indigo-600 text-white font-bold"
+                    : " bg-slate-100 border-slate-200 text-slate-700";
                 if (isActive) {
-                    btn.classList.add('ring-4', 'ring-indigo-300', 'scale-105');
-                } else {
-                    btn.classList.remove('ring-4', 'ring-indigo-300', 'scale-105');
+                    classes += " ring-4 ring-indigo-300 scale-105";
                 }
-
-                if (isSelected) {
-                    btn.className = btn.className.replace(/bg-slate-100|border-slate-200|text-slate-700/g, 'bg-indigo-600 border-indigo-600 text-white font-bold');
-                } else {
-                    btn.className = btn.className.replace(/bg-indigo-600|border-indigo-600|text-white/g, 'bg-slate-100 border-slate-200 text-slate-700 font-semibold');
-                }
+                btn.className = classes;
             }
         }
 
@@ -687,7 +721,7 @@
             }
         }
 
-        function submitQuizAnswers(isForced = false) {
+        async function submitQuizAnswers(isForced = false) {
             clearInterval(examTimer);
 
             let totalScore = 0;
@@ -705,7 +739,7 @@
                 submittedAt: new Date().toLocaleString('th-TH')
             };
 
-            const localRecords = JSON.parse(localStorage.getItem('studentScores')) || [];
+            const localRecords = await getScores();
             const existingIdx = localRecords.findIndex(r => r.uid === scoreRecord.uid);
             if (existingIdx !== -1) {
                 localRecords[existingIdx] = scoreRecord;
@@ -713,7 +747,7 @@
                 localRecords.push(scoreRecord);
             }
 
-            localStorage.setItem('studentScores', JSON.stringify(localRecords));
+            await saveScores(localRecords);
 
             document.getElementById('result-total-score').textContent = totalScore;
             document.getElementById('result-user-summary').innerHTML = `
@@ -742,14 +776,14 @@
         }
 
         // ------------------ SCORE LOOKUP COMPONENT ------------------
-        function lookupUserScore() {
+        async function lookupUserScore() {
             const searchUid = document.getElementById('lookup-uid').value.trim().toUpperCase();
             if (!searchUid) {
                 alert("กรุณากรอก User ID ที่ต้องการสืบค้น");
                 return;
             }
 
-            const records = JSON.parse(localStorage.getItem('studentScores')) || [];
+            const records = await getScores();
             const result = records.find(r => r.uid === searchUid);
             const box = document.getElementById('lookup-result-box');
 
@@ -784,9 +818,12 @@
             document.getElementById('admin-passcode-input').value = '';
         }
 
+        // FIX: the modal told users the password was "1234" but the code checked
+        // for a completely different string ("kamon"), so nobody could ever log
+        // in using the password shown on screen. The check now matches the hint.
         function submitAdminAuth() {
             const pw = document.getElementById('admin-passcode-input').value;
-            if (pw === 'kamon') {
+            if (pw === '1234') {
                 closeAdminModal();
                 loadAdminDashboard();
                 switchScreen('admin');
@@ -795,13 +832,16 @@
             }
         }
 
-        function loadAdminDashboard() {
-            renderAdminStats();
-            renderAdminTable();
+        async function loadAdminDashboard() {
+            const indicator = document.getElementById('admin-loading-indicator');
+            indicator.classList.remove('hidden');
+            const records = await getScores();
+            renderAdminStats(records);
+            renderAdminTable(records);
+            indicator.classList.add('hidden');
         }
 
-        function renderAdminStats() {
-            const records = JSON.parse(localStorage.getItem('studentScores')) || [];
+        function renderAdminStats(records) {
             const totalStudents = records.length;
 
             if (totalStudents === 0) {
@@ -826,21 +866,21 @@
             document.getElementById('admin-stat-max').textContent = `${maxScore} คะแนน`;
         }
 
-        function renderAdminTable() {
-            const records = (JSON.parse(localStorage.getItem('studentScores')) || []).slice().sort((a, b) => b.total - a.total);
+        function renderAdminTable(records) {
+            const sorted = records.slice().sort((a, b) => b.total - a.total);
 
             const tbody = document.getElementById('admin-table-rows');
             const emptyState = document.getElementById('admin-empty-state');
             tbody.innerHTML = '';
 
-            if (records.length === 0) {
+            if (sorted.length === 0) {
                 emptyState.classList.remove('hidden');
                 return;
             } else {
                 emptyState.classList.add('hidden');
             }
 
-            records.forEach(student => {
+            sorted.forEach(student => {
                 const row = document.createElement('tr');
                 row.className = "hover:bg-slate-50/50 transition-colors";
 
@@ -863,8 +903,8 @@
         }
 
         // ------------------ EXPORT DATA TO EXCEL (CSV) ------------------
-        function exportToExcel() {
-            const records = (JSON.parse(localStorage.getItem('studentScores')) || []).slice().sort((a, b) => b.total - a.total);
+        async function exportToExcel() {
+            const records = (await getScores()).slice().sort((a, b) => b.total - a.total);
 
             if (records.length === 0) {
                 alert(`ยังไม่มีข้อมูลผลการสอบสำหรับออกรายงาน Excel`);
@@ -876,7 +916,9 @@
 
             records.forEach(student => {
                 const statusText = student.total >= 10 ? "ผ่าน" : "ปรับปรุง";
-                csvContent += `${student.uid},"${student.name}",${student.total},${statusText},${student.submittedAt}\n`;
+                // Escape any embedded quotes in free-text fields so the CSV stays valid.
+                const safeName = String(student.name).replace(/"/g, '""');
+                csvContent += `${student.uid},"${safeName}",${student.total},${statusText},${student.submittedAt}\n`;
             });
 
             const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
@@ -891,11 +933,11 @@
         }
 
         // Inject Mock Data (Allows teachers to preview report functionality instantly)
-        function injectMockData() {
+        async function injectMockData() {
             const firstNames = ["กิตติภพ", "จิรพัฒน์", "ชยุตม์", "ธนพัตน์", "ปกรณ์เกียรติ", "รัชพล", "พีรพล", "ชลสิทธิ์", "ณัฐพงษ์", "มนัสวี", "วรัญญา", "ชลดา", "ทิพยวรรณ", "ขวัญจิรา", "กัญญารัตน์", "พิมพิกา"];
             const lastNames = ["สมบูรณ์", "ดีเลิศ", "แสนดี", "วงศ์ษา", "รุ่งเรือง", "ชื่นชม", "มณีรนิต", "แสงทอง", "สุขใจ", "บุญธรรม", "แก้วงาม", "นามดี", "ยอดรัก", "ทรงเดช", "ศรีบุญ", "เกิดผล"];
 
-            let currentRecords = JSON.parse(localStorage.getItem('studentScores')) || [];
+            let currentRecords = await getScores();
 
             for (let i = 0; i < 15; i++) {
                 const uidNum = Math.floor(Math.random() * 9000) + 1000;
@@ -906,7 +948,7 @@
                 const namePrefix = Math.random() > 0.5 ? "เด็กชาย" : "เด็กหญิง";
                 const fullName = `${namePrefix}${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
 
-                const total = Math.floor(Math.random() * 15) + 5;
+                const total = Math.floor(Math.random() * 15) + 1;
 
                 const submitTime = new Date(Date.now() - Math.random() * 36000000).toLocaleString('th-TH');
 
@@ -918,16 +960,20 @@
                 });
             }
 
-            localStorage.setItem('studentScores', JSON.stringify(currentRecords));
-            loadAdminDashboard();
-            alert("สุ่มจำลองข้อมูลผู้เข้าสอบ เรียบร้อยแล้ว!");
+            const ok = await saveScores(currentRecords);
+            if (ok) {
+                await loadAdminDashboard();
+                alert("สุ่มจำลองข้อมูลผู้เข้าสอบ เรียบร้อยแล้ว!");
+            }
         }
 
-        function clearAllScores() {
+        async function clearAllScores() {
             if (confirm("คุณแน่ใจว่าต้องการล้างฐานข้อมูลผลสอบของนักเรียนทั้งหมด? (ข้อมูลนี้จะไม่สามารถกู้คืนได้)")) {
-                localStorage.setItem('studentScores', JSON.stringify([]));
-                loadAdminDashboard();
-                alert("ล้างฐานข้อมูลประวัติสอบทั้งหมดสำเร็จ");
+                const ok = await saveScores([]);
+                if (ok) {
+                    await loadAdminDashboard();
+                    alert("ล้างฐานข้อมูลประวัติสอบทั้งหมดสำเร็จ");
+                }
             }
         }
     </script>
